@@ -108,4 +108,15 @@ defmodule Game.Board do
   def on_edge?({_x, 1}), do: true 
   def on_edge?({_x, 5}), do: true 
   def on_edge?(_), do: false
+
+  @doc """
+  Checks if coordinate is on a corner
+  
+  {x, y} -> Bool
+  """
+  def on_corner?({1, 1}), do: true
+  def on_corner?({1, 5}), do: true
+  def on_corner?({5, 1}), do: true
+  def on_corner?({5, 5}), do: true
+  def on_corner?(_), do: false
 end

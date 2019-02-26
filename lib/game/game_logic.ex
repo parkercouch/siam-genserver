@@ -38,6 +38,9 @@ defmodule Game.Logic do
 
   def process_move(_, _), do: {:not_valid, "That isn't a valid action"}
 
+  #
+  # Selecting
+  #
   defp select(_location, %{selected: s}) when s != nil do
     {:not_valid, "Something is already selected"}
   end
@@ -60,18 +63,59 @@ defmodule Game.Logic do
 
   defp select(_, _), do: {:not_valid, "Not a valid selection"}
 
+  #
+  # Targeting
+  #
   defp target(_move, _turn, _selected = nil) do
     {:not_valid, "You must select something first"}
   end
 
-  defp target(location, turn, :bullpen) do
-    {:not_valid, "** bullpen -> board is not ready yet **"}
+  defp target({_x, _y} = location, turn, _selected = :bullpen) do
+    # TODO: get rid of nested if
+    if Board.on_edge?(location) do
+      # Move if empty
+      if Board.get_player_at(turn.board[location]) == :empty do
+        {:continue, %{turn | targeted: location}}
+      else
+      # Check if pushable if occupied
+        # TODO: update this once pushing logic is completed
+        {:not_valid, "** Push from side not ready yet! **"}
+      end
+    else
+      {:not_valid, "Can only move onto edge of board"}
+    end
+  end
+
+  defp target(_location, turn, _selected = :bullpen), do: {:not_valid, "Not a valid target"}
+
+  defp target(:bullpen, turn, {_x, _y} = selected) do
+    %{board: board, current_player: player, bullpen: bullpen} = turn
+
+    if Board.on_edge?(selected) do
+      # TODO: Might offload to finalize function once it is done
+      current_turn = %{turn | targeted: :bullpen, action: {:withdraw}}
+      next_turn = %{turn |
+        selected: nil,
+        board: %{board | selected => {:empty}},
+        bullpen: %{bullpen | bullpen[player] => bullpen[player] + 1}
+      }
+      {:next, current_turn, next_turn}
+    else
+      {:not_valid, "You must be on the edge to withdraw a piece"}
+    end
+  end
+
+  defp target(location, turn, {_x, _y} = selected) when location == selected do
+    {:continue, %{turn | targeted: location}}
   end
 
   defp target(_, _, _) do
     {:not_valid, "Not a valid target"}
   end
 
+  #
+  # Finalizing
+  #
   defp finalize(location, turn) do
     {:not_valid, "** Finalize is not ready yet! **"}
   end
