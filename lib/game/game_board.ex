@@ -4,7 +4,7 @@ defmodule Game.Board do
   A board is just a normal map:
   %{{x,y} => {player, direction}}
   example:
-  %{{1,1} => {:elephant, :up}} Is an elephant piece at 1 facing up
+  %{{1,1} => {:elephant, :up}} Is an elephant piece at 1,1 facing up
 
   Possible Pieces:
   :elephant, :rhino, :mountain, :empty
@@ -12,12 +12,22 @@ defmodule Game.Board do
   Possible Directions:
   :up, :down, :left, :right, :neutral
   """
+
+  @doc """
+  Create the default starting board
+  __,__,__,__,__
+  __,__,__,__,__
+  __,⛰,⛰,⛰,__
+  __,__,__,__,__
+  __,__,__,__,__
+  """
   def new_board() do
     # Generate empty board
     starting_board =
     for x <- Enum.to_list(1..5), y <- Enum.to_list(1..5),
     into: %{},
     do: {{x, y}, {:empty}}
+
 
     # Add starting mountains in middle
     %{starting_board |
@@ -48,10 +58,7 @@ defmodule Game.Board do
     )
   end
 
-  @doc """
-  Selects emoji for pretty print
-  Just for fun
-  """
+  # Pick emoji for print... just for fun!
   defp f({:empty}), do: "  "
   defp f({player, direction}) do
     direction_symbol = case direction do

@@ -76,12 +76,12 @@ defmodule Game.Server do
 
       {:next, next_turn} ->
         current_turn = %{current_turn | actions: [move_data | current_turn.actions]}
-        updated_state = [next_turn | [current_turn | state]]
+        updated_state = [next_turn | [current_turn | previous_turns]]
         {:reply, {:next, current_turn, next_turn}, updated_state}
 
       {:win, final_turn} ->
         current_turn = %{current_turn | actions: [move_data | current_turn.actions]}
-        updated_state = [final_turn | [current_turn | state]]
+        updated_state = [final_turn | [current_turn | previous_turns]]
         {:reply, {:win, current_turn, final_turn}, updated_state}
     end
   end
