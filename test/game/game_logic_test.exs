@@ -3,6 +3,7 @@ defmodule Game.LogicTest do
   doctest Game.Logic
 
   alias Game.Server, as: Server
+  alias Game.Logic, as: Logic
 
   test "Select Bullpen" do
     {:ok, pid} = Server.start()
@@ -33,6 +34,20 @@ defmodule Game.LogicTest do
     # There should be no actions added
     [turn | []] = Server.get_state(pid)
     assert turn.actions == []
+  end
+
+  test "Trying to issue a move as the wrong player" do
+    {:ok, pid} = Server.start()
+    current_turn = Server.get_turn(pid)
+    {type, _message} = Logic.process_move({:rhino, :select, :bullpen}, current_turn)
+    assert type == :not_valid
+  end
+
+  test "Trying to target before selecting" do
+    {:ok, pid} = Server.start()
+    current_turn = Server.get_turn(pid)
+    {type, _message} = Logic.process_move({:elephant, :target, {1, 1}}, current_turn)
+    assert type == :not_valid
   end
 
   test "Move Elephant to Board" do

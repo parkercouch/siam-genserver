@@ -44,6 +44,10 @@ defmodule Game.Logic do
     end
   end
 
+  def process_move({_, :target, _}, %{actions: []}) do
+    {:not_valid, "You must select something first"}
+  end
+
   def process_move({player, :target, location} = move_data, current_turn) do
     {:not_valid, "No function yet"}
   end
