@@ -63,12 +63,13 @@ defmodule Game.Server do
   def init(_) do
     starting_state = %{
       board: Board.new_board(),
-      bullpen: %{elephant: 5, rhino: 5}
+      bullpen: %{elephant: 5, rhino: 5},
       current_player: :elephant,
       turn_number: 0,
       winner: nil,
-      actions: [],
+      actions: []
     }
+
     {:ok, [starting_state]}
   end
 
@@ -112,7 +113,8 @@ defmodule Game.Server do
   def handle_call({:undo_turn}, _, [first_turn | []] = state) do
     {:reply, {:error, "Can't undo on first turn!"}, state}
   end
-  def handle_call({:undo_turn}, _, [_current_turn | [ prev_turn | tail]]) do
+
+  def handle_call({:undo_turn}, _, [_current_turn | [prev_turn | tail]]) do
     updated_state = [%{prev_turn | actions: []} | tail]
     {:reply, {:ok, updated_state}, updated_state}
   end

@@ -21,30 +21,45 @@ defmodule Game.Logic do
   {:win, final_turn} - valid move, this action finishes turn and game
   """
   def process_move({player, _, _}, %{current_player: current}) when player != current do
-    {:error, "It's not your turn!"}
+    {:not_valid, "It's not your turn!"}
   end
-  def process_move({_, :select, _}, %{actions: [_]} = current_turn) do
-    {:error, "Something is already selected"}
+
+  def process_move({_, :select, _}, %{actions: [_]}) do
+    {:not_valid, "Something is already selected"}
   end
+
+  def process_move({player, :select, :bullpen} = move, %{bullpen: bullpen} = state) do
+    if bullpen[player] > 0 do 
+      {:continue, %{state | actions: [move]}}
+    else
+      {:not_valid, "Your bullpen is empty"}
+    end
+  end
+
   def process_move({player, :select, location} = move, %{board: board} = state) do
-    # Valid move if:
-    # Select own bullpen and it has pieces
-    # state.bullpen[player] > 0
-    # Select own piece
-    # player == Board.get_player(board[location])
-    # Select square on edge of board
+    if Board.get_player_at(board[location]) == player do
+      {:continue, %{state | actions: [move]}}
+    else
+      {:not_valid, "You must select your own piece"}
+    end
   end
+
   def process_move({player, :target, location} = move_data, current_turn) do
+    {:not_valid, "No function yet"}
   end
+
   def process_move({player, :rotate, direction} = move_data, current_turn) do
     case auto_add(move_data, current_turn) do
       {:continue, _updated_turn} = response ->
         response
+
       {:not_valid, _message} = response ->
         response
-      {:next, _next_turn}  = response ->
+
+      {:next, _next_turn} = response ->
         response
-      {:win, _final_turn}  = response ->
+
+      {:win, _final_turn} = response ->
         response
     end
   end
@@ -62,12 +77,15 @@ defmodule Game.Logic do
   To test initial moves
   """
   def auto_add(_move, turn) do
-    next_turn = %{turn | elephant_pool: turn.elephant_pool - 1,
-      board: %{turn.board | {1,1} => {:elephant, :up}},
-      current_player: :rhino,
-      turn_number: turn.turn_number + 1,
-      actions: []
+    next_turn = %{
+      turn
+      | bullpen: %{turn.bullpen | elephant: turn.bullpen[:elephant] - 1},
+        board: %{turn.board | {1, 1} => {:elephant, :up}},
+        current_player: :rhino,
+        turn_number: turn.turn_number + 1,
+        actions: []
     }
+
     {:next, next_turn}
   end
 end
