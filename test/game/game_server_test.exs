@@ -9,4 +9,11 @@ defmodule Game.ServerTest do
     assert pid_one != nil
     assert pid_one != pid_two
   end
+
+  test "No Undo turn on first turn" do
+    {:ok, pid} = Game.Server.start()
+    {response, _message} = Game.Server.undo_turn(pid)
+
+    assert response == :error
+  end
 end

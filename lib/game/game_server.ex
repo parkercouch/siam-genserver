@@ -103,8 +103,11 @@ defmodule Game.Server do
   end
 
   # Remove current turn and actions from prev turn
-  def handle_call({:undo_turn}, _, [_current_turn | [ prev_turn | prev_turns]]) do
-    updated_state = [%{prev_turn | actions: []} | prev_turns]
+  def handle_call({:undo_turn}, _, [first_turn | []] = state) do
+    {:reply, {:error, "Can't undo on first turn!"}, state}
+  end
+  def handle_call({:undo_turn}, _, [_current_turn | [ prev_turn | tail]]) do
+    updated_state = [%{prev_turn | actions: []} | tail]
     {:reply, {:ok, updated_state}, updated_state}
   end
 end

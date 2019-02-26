@@ -18,7 +18,7 @@ defmodule Game.LogicTest do
     )
 
     state = Server.get_state(pid)
-    IO.inspect(state)
+    # IO.inspect(state)
     [next | [prev | _rest]] = state
 
 
