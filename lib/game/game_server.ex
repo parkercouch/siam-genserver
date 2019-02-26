@@ -67,7 +67,9 @@ defmodule Game.Server do
       current_player: :elephant,
       turn_number: 0,
       winner: nil,
-      actions: []
+      selected: nil,
+      targeted: nil,
+      action: nil,
     }
 
     {:ok, [starting_state]}
@@ -81,15 +83,13 @@ defmodule Game.Server do
       {:not_valid, _message} = response ->
         {:reply, response, state}
 
-      {:next, next_turn} ->
-        current_turn = %{current_turn | actions: [move_data | current_turn.actions]}
-        updated_state = [next_turn | [current_turn | previous_turns]]
-        {:reply, {:next, current_turn, next_turn}, updated_state}
+      {:next, updated_turn, next_turn} ->
+        updated_state = [next_turn | [updated_turn | previous_turns]]
+        {:reply, {:next, updated_turn, next_turn}, updated_state}
 
-      {:win, final_turn} ->
-        current_turn = %{current_turn | actions: [move_data | current_turn.actions]}
-        updated_state = [final_turn | [current_turn | previous_turns]]
-        {:reply, {:win, current_turn, final_turn}, updated_state}
+      {:win, updated_turn, final_turn} ->
+        updated_state = [final_turn | [updated_turn | previous_turns]]
+        {:reply, {:win, updated_turn, final_turn}, updated_state}
     end
   end
 
@@ -105,7 +105,7 @@ defmodule Game.Server do
 
   # Remove actions from current turn
   def handle_call({:undo_move}, _, [current_turn | previous_turns]) do
-    updated_turn = %{current_turn | actions: []}
+    updated_turn = %{current_turn | selected: nil, targeted: nil, action: nil}
     {:reply, {:ok, updated_turn}, [updated_turn | previous_turns]}
   end
 
@@ -115,7 +115,8 @@ defmodule Game.Server do
   end
 
   def handle_call({:undo_turn}, _, [_current_turn | [prev_turn | tail]]) do
-    updated_state = [%{prev_turn | actions: []} | tail]
+    prev_turn = %{prev_turn | selected: nil, targeted: nil, action: nil}
+    updated_state = [prev_turn | tail]
     {:reply, {:ok, updated_state}, updated_state}
   end
 end

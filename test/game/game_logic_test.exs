@@ -8,12 +8,12 @@ defmodule Game.LogicTest do
   test "Select Bullpen" do
     {:ok, pid} = Server.start()
     
-    {_, %{actions: actions, bullpen: bullpen}} = Server.move(pid, {:elephant, :select, :bullpen})
+    {_, %{selected: selected, bullpen: bullpen}} = Server.move(pid, {:elephant, :select, :bullpen})
     [turn | []] = Server.get_state(pid)
 
-    assert actions == [{:elephant, :select, :bullpen}]
     assert bullpen[:elephant] == 5
-    assert turn.actions == actions
+    assert selected == :bullpen
+    assert turn.selected == :bullpen
   end
 
   test "Selecting a non-valid piece" do
@@ -23,17 +23,17 @@ defmodule Game.LogicTest do
     {type, _message} = Server.move(pid, {:elephant, :select, {1, 1}})
     assert type == :not_valid
 
-    # There should be no actions added
+    # There should be no selections
     [turn | []] = Server.get_state(pid)
-    assert turn.actions == []
+    assert turn.selected == nil
 
     # Make sure server rejects selecting a mountain
     {type, _message} = Server.move(pid, {:elephant, :select, {3, 3}})
     assert type == :not_valid
 
-    # There should be no actions added
+    # There should be no selection
     [turn | []] = Server.get_state(pid)
-    assert turn.actions == []
+    assert turn.selected == nil
   end
 
   test "Trying to issue a move as the wrong player" do
@@ -56,7 +56,7 @@ defmodule Game.LogicTest do
     moves = [
       {:elephant, :select, :bullpen},
       {:elephant, :target, {1, 1}},
-      {:elephant, :rotate, :up}
+      {:elephant, :finalize, {:rotate, :up}}
     ]
 
     Enum.map(
@@ -66,18 +66,22 @@ defmodule Game.LogicTest do
 
     state = Server.get_state(pid)
     # IO.inspect(state)
-    [next | [prev | _rest]] = state
+    [next_turn | first_turn] = state
 
-    assert prev.board[{1, 1}] == {:empty}
-    assert prev.current_player == :elephant
-    assert prev.bullpen[:elephant] == 5
-    assert prev.turn_number == 0
-    assert prev.actions == [{}, {}, {}]
+    assert first_turn.board[{1, 1}] == {:empty}
+    assert first_turn.current_player == :elephant
+    assert first_turn.bullpen[:elephant] == 5
+    assert first_turn.turn_number == 0
+    assert next_turn.selected == :bullpen
+    assert next_turn.targeted == {1, 1}
+    assert next_turn.action == {:rotate, :up}
 
-    assert next.board[{1, 1}] == {:elephant, :up}
-    assert next.current_player == :rhino
-    assert next.bullpen[:elephant] == 4
-    assert next.turn_number == 1
-    assert next.actions == []
+    assert next_turn.board[{1, 1}] == {:elephant, :up}
+    assert next_turn.current_player == :rhino
+    assert next_turn.bullpen[:elephant] == 4
+    assert next_turn.turn_number == 1
+    assert next_turn.selected == nil
+    assert next_turn.targeted == nil
+    assert next_turn.action == nil
   end
 end

@@ -17,79 +17,62 @@ defmodule Game.Logic do
   Send a move and current turn and get back:
   {:not_valid, message} - not a valid move (not enough push strength, etc)
   {:continue, updated_turn} - valid move, still on current turn
-  {:next, next_turn} - valid move, this action finishes turn
-  {:win, final_turn} - valid move, this action finishes turn and game
+  {:next, current_turn, next_turn} - valid move, this action finishes turn
+  {:win, current_turn, final_turn} - valid move, this action finishes turn and game
   """
   def process_move({player, _, _}, %{current_player: current}) when player != current do
     {:not_valid, "It's not your turn!"}
   end
 
-  def process_move({_, :select, _}, %{actions: [_]}) do
+  def process_move({_player, :select, location}, turn) do
+    select(location, turn)
+  end
+
+  def process_move({_player, :target, location}, turn) do
+    target(location, turn, turn.selected)
+  end
+
+  def process_move({_player, :finalize, location}, turn) do
+    finalize(location, turn)
+  end
+
+  def process_move(_, _), do: {:not_valid, "That isn't a valid action"}
+
+  defp select(_location, %{selected: s}) when s != nil do
     {:not_valid, "Something is already selected"}
   end
 
-  def process_move({player, :select, :bullpen} = move, %{bullpen: bullpen} = state) do
+  defp select(:bullpen, %{bullpen: bullpen, current_player: player} = turn) do
     if bullpen[player] > 0 do 
-      {:continue, %{state | actions: [move]}}
+      {:continue, %{turn | selected: :bullpen}}
     else
       {:not_valid, "Your bullpen is empty"}
     end
   end
 
-  def process_move({player, :select, location} = move, %{board: board} = state) do
+  defp select({_x, _y} = location, %{board: board, current_player: player} = turn) do
     if Board.get_player_at(board[location]) == player do
-      {:continue, %{state | actions: [move]}}
+      {:continue, %{turn | selected: location}}
     else
       {:not_valid, "You must select your own piece"}
     end
   end
 
-  def process_move({_, :target, _}, %{actions: []}) do
+  defp select(_, _), do: {:not_valid, "Not a valid selection"}
+
+  defp target(_move, _turn, _selected = nil) do
     {:not_valid, "You must select something first"}
   end
 
-  def process_move({player, :target, location} = move_data, current_turn) do
-    {:not_valid, "No function yet"}
+  defp target(location, turn, :bullpen) do
+    {:not_valid, "** bullpen -> board is not ready yet **"}
   end
 
-  def process_move({player, :rotate, direction} = move_data, current_turn) do
-    case auto_add(move_data, current_turn) do
-      {:continue, _updated_turn} = response ->
-        response
-
-      {:not_valid, _message} = response ->
-        response
-
-      {:next, _next_turn} = response ->
-        response
-
-      {:win, _final_turn} = response ->
-        response
-    end
+  defp target(_, _, _) do
+    {:not_valid, "Not a valid target"}
   end
 
-  @doc """
-  Automatically returns a valid move
-  for testing purposes
-  """
-  def auto_no(_move, _turn) do
-    {:not_valid, "You can't move that piece there"}
-  end
-
-  @doc """
-  Moves a elephant to the board
-  To test initial moves
-  """
-  def auto_add(_move, turn) do
-    next_turn = %{
-      turn
-      | bullpen: %{turn.bullpen | elephant: turn.bullpen[:elephant] - 1},
-        board: %{turn.board | {1, 1} => {:elephant, :up}},
-        current_player: :rhino,
-        turn_number: turn.turn_number + 1,
-        actions: []
-    }
-
-    {:next, next_turn}
+  defp finalize(location, turn) do
+    {:not_valid, "** Finalize is not ready yet! **"}
   end
 end
