@@ -45,4 +45,23 @@ defmodule Game.BoardTest do
     assert mountain == :mountain
     assert empty == :empty
   end
+
+  test "If orthogonal" do
+    center = {2, 2}
+    up = {2, 3}
+    down = {2, 1}
+    left = {1, 2}
+    right = {3, 2}
+    diagonal = {3, 3}
+    far_away_y = {2, 5}
+    far_away_x = {5, 2}
+
+    assert Board.is_orthogonal?(center, up) == true
+    assert Board.is_orthogonal?(center, down) == true
+    assert Board.is_orthogonal?(center, left) == true
+    assert Board.is_orthogonal?(center, right) == true
+    assert Board.is_orthogonal?(center, diagonal) == false
+    assert Board.is_orthogonal?(center, far_away_y) == false
+    assert Board.is_orthogonal?(center, far_away_x) == false
+  end
 end

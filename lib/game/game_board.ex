@@ -119,4 +119,19 @@ defmodule Game.Board do
   def on_corner?({5, 1}), do: true
   def on_corner?({5, 5}), do: true
   def on_corner?(_), do: false
+
+  @doc """
+  Checks if two coordinates are within 1 space
+  and not diagonal
+
+  {x, y}, {x, y} -> Bool
+  """
+  def is_orthogonal?({x1, y1}, {x2, y2}) do
+    delta_x = delta(x1, x2)
+    delta_y = delta(y1, y2)
+    delta_x + delta_y < 2
+  end
+
+  defp delta(a, b) when a >= b, do: a - b
+  defp delta(a, b) when a < b, do: b - a
 end
