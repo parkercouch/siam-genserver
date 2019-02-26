@@ -87,4 +87,6 @@ defmodule Game.Board do
 
     "#{player_symbol}#{direction_symbol}"
   end
+
+  def get_player(piece) do: elem(piece, 1)
 end

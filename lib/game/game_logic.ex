@@ -11,14 +11,32 @@ defmodule Game.Logic do
     Finalize(Rotate) - Select rotation (or confirm push)
   """
 
+  alias Game.Board, as: Board
+
   @doc """
   Send a move and current turn and get back:
-  {:continue, updated_turn} - valid move, still on current turn
   {:not_valid, message} - not a valid move (not enough push strength, etc)
+  {:continue, updated_turn} - valid move, still on current turn
   {:next, next_turn} - valid move, this action finishes turn
   {:win, final_turn} - valid move, this action finishes turn and game
   """
-  def process_move(move_data, current_turn) do
+  def process_move({player, _, _}, %{current_player: current}) when player != current do
+    {:error, "It's not your turn!"}
+  end
+  def process_move({_, :select, _}, %{actions: [_]} = current_turn) do
+    {:error, "Something is already selected"}
+  end
+  def process_move({player, :select, location} = move, %{board: board} = state) do
+    # Valid move if:
+    # Select own bullpen and it has pieces
+    # state.bullpen[player] > 0
+    # Select own piece
+    # player == Board.get_player(board[location])
+    # Select square on edge of board
+  end
+  def process_move({player, :target, location} = move_data, current_turn) do
+  end
+  def process_move({player, :rotate, direction} = move_data, current_turn) do
     case auto_add(move_data, current_turn) do
       {:continue, _updated_turn} = response ->
         response

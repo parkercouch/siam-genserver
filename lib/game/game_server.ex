@@ -16,6 +16,11 @@ defmodule Game.Server do
 
   @doc """
   Send player move to be processed
+  In the form of:
+  {player, action, location/direction}
+  {:elephant, :select, {1,2}} -- Select the piece at 1,2
+
+  Returns {:ok, new_state} or {:error, message}
   """
   def move(pid, move_data) do
     GenServer.call(pid, {:move, move_data})
@@ -34,6 +39,8 @@ defmodule Game.Server do
   Last turn becomes current
   All actions in previous (now current) turn
   are reset
+
+  Error is returned on first turn
   """
   def undo_turn(pid) do
     GenServer.call(pid, {:undo_turn})
@@ -56,8 +63,7 @@ defmodule Game.Server do
   def init(_) do
     starting_state = %{
       board: Board.new_board(),
-      rhino_pool: 5,
-      elephant_pool: 5,
+      bullpen: %{elephant: 5, rhino: 5}
       current_player: :elephant,
       turn_number: 0,
       winner: nil,
