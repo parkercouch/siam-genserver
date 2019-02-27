@@ -94,8 +94,17 @@ defmodule Game.Board do
     "#{player_symbol}#{direction_symbol}"
   end
 
+  @doc """
+  Pulls out player info from piece tuple
+  """
   def get_player_at({:empty}), do: :empty
   def get_player_at({piece, _}), do: piece
+
+  @doc """
+  Pulls out the direction info from a piece
+  """
+  def get_direction_of({:empty}), do: :neutral
+  def get_direction_of({_, direction}), do: direction
 
   @doc """
   Checks if coordinate is on the
@@ -134,4 +143,29 @@ defmodule Game.Board do
 
   defp delta(a, b) when a >= b, do: a - b
   defp delta(a, b) when a < b, do: b - a
+
+  @doc """
+  Moves a piece from one location to another
+  This assumes the end location is empty
+
+  board, {x,y}, {x,y} -> board
+  """
+  def move_piece(board, start, target) do
+    %{board | target => board[start], start => {:empty}}
+  end
+
+  @doc """
+  Checks if location is in from of piece
+
+  board, {x, y}, {x, y} -> Bool 
+  """
+  def is_in_front?(board, selected, target) do
+    direction = get_direction_of(board[selected])
+    in_front_helper(direction, selected, target)
+  end
+
+  defp in_front_helper(:up, {x1, y1}, {x2, y2}), do: x1 == x2 and y2 - y1 == 1
+  defp in_front_helper(:down, {x1, y1}, {x2, y2}), do: x1 == x2 and y1 - y2 == 1
+  defp in_front_helper(:left, {x1, y1}, {x2, y2}), do: y1 == y2 and x1 - x2 == 1
+  defp in_front_helper(:right, {x1, y1}, {x2, y2}), do: y1 == y2 and x2 - x1 == 1
 end

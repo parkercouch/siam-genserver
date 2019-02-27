@@ -109,9 +109,29 @@ defmodule Game.Logic do
     {:continue, %{turn | targeted: location}}
   end
 
+  defp target(location, %{board: board} = turn, {_x, _y} = selected) do
+    if Board.is_orthogonal?(selected, location) do
+      piece_at_location = Board.get_player_at(board[location])
+      move_or_push(location, turn, selected, piece_at_location)
+    else
+      {:not_valid, "You can't move more than 1 space or diagonal"}
+    end
+  end
+
   defp target(_, _, _) do
     {:not_valid, "Not a valid target"}
   end
+
+  defp move_or_push(location, %{board: board} = turn, selected, :empty) do
+    {:continue, %{turn | target: location, board: Board.move_piece(board, selected, location)}}
+  end
+
+  defp move_or_push(target, turn, selected, _) do
+    {:not_valid, "** Not implemented yet **"}
+  end
+
+  defp move_target(), do: {:not_valid, "** Moving not implemented yet **"}
+
 
   #
   # Finalizing

@@ -64,4 +64,60 @@ defmodule Game.BoardTest do
     assert Board.is_orthogonal?(center, far_away_y) == false
     assert Board.is_orthogonal?(center, far_away_x) == false
   end
+
+  test "Is in front?" do
+    board = Board.new_board()
+    board = %{board |
+      {2, 2} => {:elephant, :right},
+      {2, 4} => {:rhino, :up},
+      {4, 2} => {:elephant, :down},
+      {4, 4} => {:rhino, :left},
+    }
+
+    # up
+    assert Board.is_in_front?(board, {2, 2}, {2, 3}) == false
+    # down
+    assert Board.is_in_front?(board, {2, 2}, {2, 1}) == false
+    # left
+    assert Board.is_in_front?(board, {2, 2}, {1, 2}) == false
+    # right
+    assert Board.is_in_front?(board, {2, 2}, {3, 2}) == true
+    # somewhere else
+    assert Board.is_in_front?(board, {2, 2}, {3, 1}) == false
+
+    # up
+    assert Board.is_in_front?(board, {2, 4}, {2, 5}) == true
+    # down
+    assert Board.is_in_front?(board, {2, 4}, {2, 3}) == false
+    # left
+    assert Board.is_in_front?(board, {2, 4}, {1, 4}) == false
+    # right
+    assert Board.is_in_front?(board, {2, 4}, {3, 4}) == false
+    # somewhere else
+    assert Board.is_in_front?(board, {2, 4}, {3, 3}) == false
+
+    # up
+    assert Board.is_in_front?(board, {4, 2}, {4, 3}) == false
+    # down
+    assert Board.is_in_front?(board, {4, 2}, {4, 1}) == true
+    # left
+    assert Board.is_in_front?(board, {4, 2}, {3, 2}) == false
+    # right
+    assert Board.is_in_front?(board, {4, 2}, {5, 2}) == false
+    # somewhere else
+    assert Board.is_in_front?(board, {4, 2}, {3, 1}) == false
+
+    # up
+    assert Board.is_in_front?(board, {4, 4}, {4, 5}) == false
+    # down
+    assert Board.is_in_front?(board, {4, 4}, {4, 3}) == false
+    # left
+    assert Board.is_in_front?(board, {4, 4}, {3, 4}) == true
+    # right
+    assert Board.is_in_front?(board, {4, 4}, {5, 4}) == false
+    # somewhere else
+    assert Board.is_in_front?(board, {4, 4}, {3, 3}) == false
+  end
+
+
 end
