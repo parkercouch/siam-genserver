@@ -78,6 +78,10 @@ defmodule Game.LogicTest do
     assert type = :not_valid
   end
 
+  test "Move to empty square" do
+
+  end
+
   test "Move Elephant to Board" do
     {:ok, pid} = Server.start()
 

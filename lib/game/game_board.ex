@@ -168,4 +168,34 @@ defmodule Game.Board do
   defp in_front_helper(:down, {x1, y1}, {x2, y2}), do: x1 == x2 and y1 - y2 == 1
   defp in_front_helper(:left, {x1, y1}, {x2, y2}), do: y1 == y2 and x1 - x2 == 1
   defp in_front_helper(:right, {x1, y1}, {x2, y2}), do: y1 == y2 and x2 - x1 == 1
+
+  @doc """
+  Takes a board and index and returns a row
+
+  Row is left to right
+  Index 0 -> x: 1
+  [{:empty}, {:mountain, :neutral},...]
+  """
+  def get_row(board, index) do
+    board
+    |> Map.to_list()
+    |> Stream.filter(fn {{_x, y}, _piece} -> y == index end)
+    |> Enum.map(fn {_, piece} -> piece end)
+  end
+
+  @doc """
+  Takes a board and index and returns a column
+
+  Column is bottom to top
+  Index 0 -> y: 1
+  [{:empty}, {:mountain, :neutral},...]
+  """
+  def get_column(board, index) do
+    board
+    |> Map.to_list()
+    |> Stream.filter(fn {{x, _y}, _piece} -> x == index end)
+    |> Enum.map(fn {_coord, piece} -> piece end)
+  end
 end
+
+Enum.filter([1, 2, 3], fn x -> rem(x, 2) == 0 end)

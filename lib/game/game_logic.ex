@@ -25,15 +25,15 @@ defmodule Game.Logic do
   end
 
   def process_move({_player, :select, location}, turn) do
-    select(location, turn)
+    handle_select(location, turn)
   end
 
-  def process_move({_player, :target, location}, turn) do
-    target(location, turn, turn.selected)
+  def process_move({_player, :target, target}, turn) do
+    handle_target(turn, turn.selected, target)
   end
 
   def process_move({_player, :finalize, location}, turn) do
-    finalize(location, turn)
+    handle_finalize(turn, location)
   end
 
   def process_move(_, _), do: {:not_valid, "That isn't a valid action"}
@@ -41,11 +41,11 @@ defmodule Game.Logic do
   #
   # Selecting
   #
-  defp select(_location, %{selected: s}) when s != nil do
+  defp handle_select(_location, %{selected: s}) when s != nil do
     {:not_valid, "Something is already selected"}
   end
 
-  defp select(:bullpen, %{bullpen: bullpen, current_player: player} = turn) do
+  defp handle_select(:bullpen, %{bullpen: bullpen, current_player: player} = turn) do
     if bullpen[player] > 0 do 
       {:continue, %{turn | selected: :bullpen}}
     else
@@ -53,7 +53,7 @@ defmodule Game.Logic do
     end
   end
 
-  defp select({_x, _y} = location, %{board: board, current_player: player} = turn) do
+  defp handle_select({_x, _y} = location, %{board: board, current_player: player} = turn) do
     if Board.get_player_at(board[location]) == player do
       {:continue, %{turn | selected: location}}
     else
@@ -61,24 +61,26 @@ defmodule Game.Logic do
     end
   end
 
-  defp select(_, _), do: {:not_valid, "Not a valid selection"}
+  defp handle_select(_, _), do: {:not_valid, "Not a valid selection"}
 
   #
   # Targeting
   #
 
   # Tryint to target before selecting
-  defp target(_move, _turn, _selected = nil) do
+  defp handle_target(_turn, _selected = nil, _target) do
+  # defp handle_target(_move, _turn, _selected = nil) do
     {:not_valid, "You must select something first"}
   end
 
   # Select bullpen then target square to move piece to
-  defp target({_x, _y} = location, turn, _selected = :bullpen) do
+  defp handle_target(turn, _selected = :bullpen, target = {_x, _y}) do
+  # defp handle_target({_x, _y} = location, turn, _selected = :bullpen) do
     # TODO: get rid of nested if
-    if Board.on_edge?(location) do
+    if Board.on_edge?(target) do
       # Move if empty
-      if Board.get_player_at(turn.board[location]) == :empty do
-        {:continue, %{turn | targeted: location}}
+      if Board.get_player_at(turn.board[target]) == :empty do
+        {:continue, %{turn | targeted: target}}
       else
       # Check if pushable if occupied
         # TODO: update this once pushing logic is completed
@@ -90,61 +92,61 @@ defmodule Game.Logic do
   end
 
   # Not valid target after selecting bullpen
-  defp target(_location, turn, _selected = :bullpen), do: {:not_valid, "Not a valid target"}
+  defp handle_target(turn, _selected = :bullpen, _target), do: {:not_valid, "Not a valid target"}
+  # defp handle_target(_location, turn, _selected = :bullpen), do: {:not_valid, "Not a valid target"}
 
   # Withdraw
-  defp target(_target = :bullpen, turn, {_x, _y} = selected) do
+  defp handle_target(turn, selected = {_x, _y}, _target = :bullpen) do
+  # defp handle_target(_target = :bullpen, turn, {_x, _y} = selected) do
     %{board: board, current_player: player, bullpen: bullpen} = turn
 
     if Board.on_edge?(selected) do
       # TODO: Might offload to finalize function once it is done
-      current_turn = %{turn | :targeted => :bullpen, :action => {:withdraw}}
+      current_turn = %{turn | targeted: :bullpen, action: {:withdraw}}
       next_turn = %{turn |
         selected: nil,
         board: %{board | selected => {:empty}},
         bullpen: %{bullpen | player => bullpen[player] + 1}
       }
-      IO.inspect(current_turn)
-      IO.inspect(next_turn)
       {:next, current_turn, next_turn}
     else
-      IO.inspect("NOT ON EDGE")
       {:not_valid, "You must be on the edge to withdraw a piece"}
     end
   end
 
-  defp target(location, turn, {_x, _y} = selected) when location == selected do
-    {:continue, %{turn | targeted: location}}
+  # Target self
+  defp handle_target(turn, selected = {_x, _y}, target) when selected == target do
+  # defp handle_target(location, turn, {_x, _y} = selected) when location == selected do
+    {:continue, %{turn | targeted: target}}
   end
 
-  defp target(location, %{board: board} = turn, {_x, _y} = selected) do
-    if Board.is_orthogonal?(selected, location) do
-      piece_at_location = Board.get_player_at(board[location])
-      move_or_push(location, turn, selected, piece_at_location)
+  # Target another piece/square
+  defp handle_target(turn = %{board: board}, selected = {_x, _y}, target) do
+    if Board.is_orthogonal?(selected, target) do
+      target_piece = Board.get_player_at(board[target])
+      move_or_push(turn, selected, target, target_piece)
     else
       {:not_valid, "You can't move more than 1 space or diagonal"}
     end
   end
 
-  defp target(_, _, _) do
+  defp handle_target(_, _, _) do
     {:not_valid, "Not a valid target"}
   end
 
-  defp move_or_push(location, %{board: board} = turn, selected, :empty) do
-    {:continue, %{turn | target: location, board: Board.move_piece(board, selected, location)}}
+  defp move_or_push(turn = %{board: board}, selected, target, :empty) do
+    {:continue, %{turn | targeted: target, board: Board.move_piece(board, selected, target)}}
   end
 
-  defp move_or_push(target, turn, selected, _) do
+  defp move_or_push(turn, selected, target, _) do
     {:not_valid, "** Not implemented yet **"}
   end
-
-  defp move_target(), do: {:not_valid, "** Moving not implemented yet **"}
 
 
   #
   # Finalizing
   #
-  defp finalize(location, turn) do
+  defp handle_finalize(turn, location) do
     {:not_valid, "** Finalize is not ready yet! **"}
   end
 end

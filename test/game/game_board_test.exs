@@ -119,5 +119,30 @@ defmodule Game.BoardTest do
     assert Board.is_in_front?(board, {4, 4}, {3, 3}) == false
   end
 
+  test "Get specified row" do
+    board = Board.new_board()
+    board = %{board | {1, 3} => {:elephant, :up}}
+
+    [one, two, three, four, five] = Board.get_row(board, 3)
+
+    assert one == {:elephant, :up}
+    assert two == {:mountain, :neutral}
+    assert three == {:mountain, :neutral}
+    assert four == {:mountain, :neutral}
+    assert five == {:empty}
+  end
+
+  test "Get specified column" do
+    board = Board.new_board()
+    board = %{board | {3, 1} => {:elephant, :up}}
+
+    [one, two, three, four, five] = Board.get_column(board, 3)
+
+    assert one == {:elephant, :up}
+    assert two == {:empty}
+    assert three == {:mountain, :neutral}
+    assert four == {:empty}
+    assert five == {:empty}
+  end
 
 end
