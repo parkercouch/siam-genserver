@@ -4,6 +4,7 @@ defmodule Game.LogicTest do
 
   alias Game.Server, as: Server
   alias Game.Logic, as: Logic
+  alias Game.Board, as: Board
 
   test "Select Bullpen" do
     {:ok, pid} = Server.start()
@@ -48,6 +49,33 @@ defmodule Game.LogicTest do
     current_turn = Server.get_turn(pid)
     {type, _message} = Logic.process_move({:elephant, :target, {1, 1}}, current_turn)
     assert type == :not_valid
+  end
+
+  test "Withdraw piece" do
+    {:ok, [current_turn]} = Server.init(1)
+
+    %{board: board, bullpen: bullpen} = current_turn
+    current_turn = %{current_turn |
+      board: %{board | {1,1} => {:elephant, :up}, {4,4} => {:rhino, :down}},
+      bullpen: %{bullpen | elephant: 4, rhino: 4},
+    }
+
+    {:continue, updated_turn} = Logic.process_move({:elephant, :select, {1, 1}}, current_turn)
+    assert updated_turn.selected == {1, 1}
+    {:next, updated_turn, next_turn} = Logic.process_move({:elephant, :target, :bullpen}, updated_turn)
+    assert updated_turn.targeted == :bullpen
+    assert updated_turn.action == {:withdraw}
+    assert next_turn.board[{1, 1}] == {:empty}
+    assert next_turn.bullpen[:elephant] == 5
+
+    # Board.pretty_print(updated_turn.board)
+    # Board.pretty_print(next_turn.board)
+
+    rhino_turn = %{current_turn | current_player: :rhino}
+    {:continue, updated_turn} = Logic.process_move({:rhino, :select, {4, 4}}, rhino_turn)
+    assert updated_turn.selected == {4, 4}
+    {type, _} = response = Logic.process_move({:elephant, :target, :bullpen}, updated_turn)
+    assert type = :not_valid
   end
 
   test "Move Elephant to Board" do

@@ -66,10 +66,13 @@ defmodule Game.Logic do
   #
   # Targeting
   #
+
+  # Tryint to target before selecting
   defp target(_move, _turn, _selected = nil) do
     {:not_valid, "You must select something first"}
   end
 
+  # Select bullpen then target square to move piece to
   defp target({_x, _y} = location, turn, _selected = :bullpen) do
     # TODO: get rid of nested if
     if Board.on_edge?(location) do
@@ -86,21 +89,26 @@ defmodule Game.Logic do
     end
   end
 
+  # Not valid target after selecting bullpen
   defp target(_location, turn, _selected = :bullpen), do: {:not_valid, "Not a valid target"}
 
-  defp target(:bullpen, turn, {_x, _y} = selected) do
+  # Withdraw
+  defp target(_target = :bullpen, turn, {_x, _y} = selected) do
     %{board: board, current_player: player, bullpen: bullpen} = turn
 
     if Board.on_edge?(selected) do
       # TODO: Might offload to finalize function once it is done
-      current_turn = %{turn | targeted: :bullpen, action: {:withdraw}}
+      current_turn = %{turn | :targeted => :bullpen, :action => {:withdraw}}
       next_turn = %{turn |
         selected: nil,
         board: %{board | selected => {:empty}},
-        bullpen: %{bullpen | bullpen[player] => bullpen[player] + 1}
+        bullpen: %{bullpen | player => bullpen[player] + 1}
       }
+      IO.inspect(current_turn)
+      IO.inspect(next_turn)
       {:next, current_turn, next_turn}
     else
+      IO.inspect("NOT ON EDGE")
       {:not_valid, "You must be on the edge to withdraw a piece"}
     end
   end
