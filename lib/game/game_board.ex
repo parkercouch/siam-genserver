@@ -155,7 +155,7 @@ defmodule Game.Board do
   end
 
   @doc """
-  Checks if location is in from of piece
+  Checks if location is in front of piece
 
   board, {x, y}, {x, y} -> Bool 
   """
@@ -196,6 +196,88 @@ defmodule Game.Board do
     |> Stream.filter(fn {{x, _y}, _piece} -> x == index end)
     |> Enum.map(fn {_coord, piece} -> piece end)
   end
-end
 
-Enum.filter([1, 2, 3], fn x -> rem(x, 2) == 0 end)
+  @doc """
+  Assign push strength
+
+  Pass in direction and a tuple of modifiers is returned
+  Mountains are -0.67 for x and y
+  2 mountains = -1.34
+  3 mountains = -2.01
+  (Rounding errors would be an issue if we needed more mountains,
+  but only 3 can exist in this game)
+  This is because mountains require one pusher to move
+  per mountain, but it doesn't count as a pusher itself
+  Using an round number instead would make things tie and not push
+  """
+  def get_push_strength({_, :up}), do: {0, 1}
+  def get_push_strength({_, :down}), do: {0, -1}
+  def get_push_strength({_, :left}), do: {-1, 0}
+  def get_push_strength({_, :right}), do: {1, 0}
+  def get_push_strength({_, :neutral}), do: {-0.67, -0.67}
+
+  @doc """
+  Takes a list that has the pusher str as head
+  And the rest of the pieces str as tail
+
+  [1, 0, -0.67, -1] -> False
+  1 > 1.67 -> False
+  """
+  def calculate_push([pusher_str | rest_str]) do
+    sum_of_rest = Enum.sum(rest_str)
+    abs(pusher_str) > abs(sum_of_rest)
+  end
+
+  @doc """
+  Gets all pieces involved in current push
+  Takes a list with pusher as head and the rest of the row as tail
+  Returns a list with pusher at head and only involved pieces as tail
+
+  [1, 0, -0.67, :empty, -1] -> [1, 0, -0.67]
+  """
+  def get_involved_pieces(pieces) do
+    List.foldr(pieces, [], 
+      fn piece, acc ->
+        case piece do
+          {:empty} -> []
+          _ -> [piece | acc]
+        end
+      end)
+  end
+
+  @doc """
+  Changes general push str to specific direction only
+  """
+  def applicable_str(pieces = [pusher | rest]) do
+    case pusher do
+      {0, _} ->
+        Enum.map(pieces, &(elem(&1, 2)))
+      {_, 0} ->
+        Enum.map(pieces, &(elem(&1, 1)))
+    end
+  end
+
+  @doc """
+  Drops pieces behind the pusher from the list
+  """
+  def remove_pieces_behind(pieces, pusher) do
+    List.drop(pieces, pusher)
+  end
+
+  @doc """
+  Pass in pusher and board and it will calculate if
+  the push is valid
+  """
+  def is_pushable?(board, pusher_coords) do
+    pusher_direction = get_direction_of(pusher_coords)
+    board
+    |> get_row(1)
+    |> get_involved_pieces()
+    |> Enum.map(&(get_push_strength(&1)))
+    |> applicable_str()
+    |> calculate_push()
+
+  end
+
+
+end

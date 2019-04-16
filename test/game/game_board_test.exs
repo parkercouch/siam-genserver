@@ -145,4 +145,8 @@ defmodule Game.BoardTest do
     assert five == {:empty}
   end
 
+  test "Get pieces involved in push" do
+    row = [{:elephant, :right}, {:mountain, :neutral}, {:rhino, :up}, {:empty}, {:rhino, :left}]
+    assert Board.get_involved_pieces(row) == [{:elephant, :right}, {:mountain, :neutral}, {:rhino, :up}]
+  end
 end
