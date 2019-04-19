@@ -1,14 +1,16 @@
 defmodule Game.LogicTest do
+  @moduledoc false
+
   use ExUnit.Case
   doctest Game.Logic
 
   alias Game.Server, as: Server
   alias Game.Logic, as: Logic
-  alias Game.Board, as: Board
+  # alias Game.Board, as: Board
 
   test "Select Bullpen" do
     {:ok, pid} = Server.start()
-    
+
     {_, %{selected: selected, bullpen: bullpen}} = Server.move(pid, {:elephant, :select, :bullpen})
     [turn | []] = Server.get_state(pid)
 
@@ -19,7 +21,7 @@ defmodule Game.LogicTest do
 
   test "Selecting a non-valid piece" do
     {:ok, pid} = Server.start()
-    
+
     # Make sure server rejects selecting an empty square
     {type, _message} = Server.move(pid, {:elephant, :select, {1, 1}})
     assert type == :not_valid
@@ -56,7 +58,7 @@ defmodule Game.LogicTest do
 
     %{board: board, bullpen: bullpen} = current_turn
     current_turn = %{current_turn |
-      board: %{board | {1,1} => {:elephant, :up}, {4,4} => {:rhino, :down}},
+      board: %{board | {1, 1} => {:elephant, :up}, {4, 4} => {:rhino, :down}},
       bullpen: %{bullpen | elephant: 4, rhino: 4},
     }
 
@@ -74,46 +76,43 @@ defmodule Game.LogicTest do
     rhino_turn = %{current_turn | current_player: :rhino}
     {:continue, updated_turn} = Logic.process_move({:rhino, :select, {4, 4}}, rhino_turn)
     assert updated_turn.selected == {4, 4}
-    {type, _} = response = Logic.process_move({:elephant, :target, :bullpen}, updated_turn)
-    assert type = :not_valid
+    {response_type, _} = _response = Logic.process_move({:elephant, :target, :bullpen}, updated_turn)
+    assert response_type == :not_valid
   end
 
-  test "Move to empty square" do
 
-  end
+  # test "Move Elephant to Board" do
+  #   {:ok, pid} = Server.start()
 
-  test "Move Elephant to Board" do
-    {:ok, pid} = Server.start()
+  #   moves = [
+  #     {:elephant, :select, :bullpen},
+  #     {:elephant, :target, {1, 1}},
+  #     {:elephant, :finalize, {:rotate, :up}}
+  #   ]
 
-    moves = [
-      {:elephant, :select, :bullpen},
-      {:elephant, :target, {1, 1}},
-      {:elephant, :finalize, {:rotate, :up}}
-    ]
+  #   Enum.map(
+  #     moves,
+  #     &Server.move(pid, &1)
+  #   )
 
-    Enum.map(
-      moves,
-      &Server.move(pid, &1)
-    )
+  #   state = Server.get_state(pid)
+  #   # IO.inspect(state)
+  #   [next_turn | first_turn] = state
 
-    state = Server.get_state(pid)
-    # IO.inspect(state)
-    [next_turn | first_turn] = state
+  #   assert first_turn.board[{1, 1}] == {:empty}
+  #   assert first_turn.current_player == :elephant
+  #   assert first_turn.bullpen[:elephant] == 5
+  #   assert first_turn.turn_number == 0
+  #   assert next_turn.selected == :bullpen
+  #   assert next_turn.targeted == {1, 1}
+  #   assert next_turn.action == {:rotate, :up}
 
-    assert first_turn.board[{1, 1}] == {:empty}
-    assert first_turn.current_player == :elephant
-    assert first_turn.bullpen[:elephant] == 5
-    assert first_turn.turn_number == 0
-    assert next_turn.selected == :bullpen
-    assert next_turn.targeted == {1, 1}
-    assert next_turn.action == {:rotate, :up}
-
-    assert next_turn.board[{1, 1}] == {:elephant, :up}
-    assert next_turn.current_player == :rhino
-    assert next_turn.bullpen[:elephant] == 4
-    assert next_turn.turn_number == 1
-    assert next_turn.selected == nil
-    assert next_turn.targeted == nil
-    assert next_turn.action == nil
-  end
+  #   assert next_turn.board[{1, 1}] == {:elephant, :up}
+  #   assert next_turn.current_player == :rhino
+  #   assert next_turn.bullpen[:elephant] == 4
+  #   assert next_turn.turn_number == 1
+  #   assert next_turn.selected == nil
+  #   assert next_turn.targeted == nil
+  #   assert next_turn.action == nil
+  # end
 end

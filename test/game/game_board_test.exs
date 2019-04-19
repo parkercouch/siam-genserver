@@ -159,4 +159,74 @@ defmodule Game.BoardTest do
              {:rhino, :up}
            ]
   end
+
+  test "Calculate if pushable left to right" do
+    board = Board.new_board()
+    board = %{board |
+      {1, 1} => {:elephant, :right},
+      {2, 1} => {:rhino, :up},
+      {3, 1} => {:rhino, :up},
+      {4, 1} => {:mountain, :neutral},
+      {1, 2} => {:rhino, :right},
+      {2, 2} => {:elephant, :left},
+      {4, 2} => {:rhino, :right},
+      {1, 3} => {:elephant, :left}
+    }
+
+    assert Board.is_pushable?(board, {1, 1}) == true
+    assert Board.is_pushable?(board, {1, 2}) == false
+  end
+
+  test "Calculate if pushable right to left" do
+    board = Board.new_board()
+    board = %{board |
+      {5, 1} => {:elephant, :left},
+      {4, 1} => {:rhino, :up},
+      {3, 1} => {:rhino, :up},
+      {2, 1} => {:mountain, :neutral},
+      {5, 2} => {:rhino, :left},
+      {4, 2} => {:elephant, :right},
+      {2, 2} => {:rhino, :left},
+      {1, 3} => {:elephant, :left}
+    }
+
+    assert Board.is_pushable?(board, {5, 1}) == true
+    assert Board.is_pushable?(board, {5, 2}) == false
+  end
+
+  test "Calculate if pushable bottom to top" do
+    board = Board.new_board()
+    board = %{board |
+      {1, 1} => {:elephant, :up},
+      {1, 2} => {:rhino, :right},
+      {1, 3} => {:rhino, :right},
+      {1, 4} => {:mountain, :neutral},
+      {2, 1} => {:rhino, :up},
+      {2, 2} => {:elephant, :down},
+      {2, 3} => {:empty},
+      {2, 4} => {:rhino, :up},
+      {3, 1} => {:elephant, :down}
+    }
+
+    assert Board.is_pushable?(board, {1, 1}) == true
+    assert Board.is_pushable?(board, {2, 1}) == false
+  end
+
+  test "Calculate if pushable top to bottom" do
+    board = Board.new_board()
+    board = %{board |
+      {1, 5} => {:elephant, :down},
+      {1, 4} => {:rhino, :right},
+      {1, 3} => {:rhino, :right},
+      {1, 2} => {:mountain, :neutral},
+      {2, 5} => {:rhino, :down},
+      {2, 4} => {:elephant, :up},
+      {2, 3} => {:empty},
+      {2, 2} => {:rhino, :down},
+      {3, 1} => {:elephant, :down}
+    }
+
+    assert Board.is_pushable?(board, {1, 5}) == true
+    assert Board.is_pushable?(board, {2, 5}) == false
+  end
 end

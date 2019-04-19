@@ -185,6 +185,15 @@ defmodule Game.Board do
   defp in_front_helper(:right, {x1, y1}, {x2, y2}), do: y1 == y2 and x2 - x1 == 1
 
   @doc """
+  Takes a board + pusher info and returns the row or column involved
+  """
+  # TODO: add list flipping here??
+  def get_row_or_col(board, {x, _y}, :up), do: get_column(board, x)
+  def get_row_or_col(board, {x, _y}, :down), do: get_column(board, x)
+  def get_row_or_col(board, {_x, y}, :left), do: get_row(board, y)
+  def get_row_or_col(board, {_x, y}, :right), do: get_row(board, y)
+
+  @doc """
   Takes a board and index and returns a row
 
   Row is left to right
@@ -265,12 +274,20 @@ defmodule Game.Board do
   def applicable_str(pieces = [pusher | _rest]) do
     case pusher do
       {0, _} ->
-        Enum.map(pieces, &elem(&1, 2))
+        Enum.map(pieces, &elem(&1, 1))
 
       {_, 0} ->
-        Enum.map(pieces, &elem(&1, 1))
+        Enum.map(pieces, &elem(&1, 0))
     end
   end
+
+  @doc """
+  Reverses list if pusher is down or left (opposite of natural row/col direction)
+  """
+  @spec orientate_list([piece], move_direction) :: [piece]
+  def orientate_list(column, :up), do: column
+  def orientate_list(row, :right), do: row
+  def orientate_list(row_or_col, _), do: Enum.reverse(row_or_col)
 
   @doc """
   Drops pieces behind the pusher from the list
@@ -280,16 +297,25 @@ defmodule Game.Board do
   end
 
   @doc """
-  Pass in pusher and board and it will calculate if
+  Return list index of pusher based on direction
+  """
+  def get_pusher_index({x, _y}, :right), do: x - 1
+  def get_pusher_index({x, _y}, :left), do: 4 - (x - 1)
+  def get_pusher_index({_x, y}, :up), do: y - 1
+  def get_pusher_index({_x, y}, :down), do: 4 - (y - 1)
+
+  @doc """
+  Pass in pusher coords and board and it will calculate if
   the push is valid
   """
-  def is_pushable?(board, _pusher_coords) do
-    # TODO: This needs completed. This is just a basic template for
-    # TODO: the goal in mind
-    # pusher_direction = get_direction_of(pusher_coords)
+  def is_pushable?(board, pusher_coords) do
+    {_player, pusher_direction} = board[pusher_coords]
+    pusher_index = get_pusher_index(pusher_coords, pusher_direction)
 
     board
-    |> get_row(1)
+    |> get_row_or_col(pusher_coords, pusher_direction)
+    |> orientate_list(pusher_direction)
+    |> remove_pieces_behind(pusher_index)
     |> get_involved_pieces()
     |> Enum.map(&get_push_strength(&1))
     |> applicable_str()
