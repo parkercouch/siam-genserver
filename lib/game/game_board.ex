@@ -13,6 +13,19 @@ defmodule Game.Board do
   :up, :down, :left, :right, :neutral
   """
 
+
+  @type coord :: 1..5
+  @type xy_coord :: {coord, coord}
+
+  @type move_direction :: :up | :down | :left | :right
+  @type direction :: move_direction | :neutral
+  @type player :: :elephant | :rhino
+
+  @type piece :: {player, direction} | {:mountain, :neutral} | {:empty}
+
+
+  @type board :: %{xy_coord => piece}
+
   @doc """
   Create the default starting board
   __,__,__,__,__
@@ -21,6 +34,7 @@ defmodule Game.Board do
   __,__,__,__,__
   __,__,__,__,__
   """
+  @spec new_board :: board
   def new_board() do
     # Generate empty board
     starting_board =
@@ -56,7 +70,8 @@ defmodule Game.Board do
 
   # Pick emoji for print... just for fun!
   defp f({:empty}), do: "  "
-
+  # This function is long, but mostly for debugging so leaving as is
+  # credo:disable-for-next-line
   defp f({player, direction}) do
     direction_symbol =
       case direction do
@@ -112,15 +127,15 @@ defmodule Game.Board do
 
   {x,y} -> Bool
   """
-  def on_edge?({1, _y}), do: true 
-  def on_edge?({5, _y}), do: true 
-  def on_edge?({_x, 1}), do: true 
-  def on_edge?({_x, 5}), do: true 
+  def on_edge?({1, _y}), do: true
+  def on_edge?({5, _y}), do: true
+  def on_edge?({_x, 1}), do: true
+  def on_edge?({_x, 5}), do: true
   def on_edge?(_), do: false
 
   @doc """
   Checks if coordinate is on a corner
-  
+
   {x, y} -> Bool
   """
   def on_corner?({1, 1}), do: true
@@ -157,7 +172,7 @@ defmodule Game.Board do
   @doc """
   Checks if location is in front of piece
 
-  board, {x, y}, {x, y} -> Bool 
+  board, {x, y}, {x, y} -> Bool
   """
   def is_in_front?(board, selected, target) do
     direction = get_direction_of(board[selected])
@@ -180,7 +195,7 @@ defmodule Game.Board do
     board
     |> Map.to_list()
     |> Stream.filter(fn {{_x, y}, _piece} -> y == index end)
-    |> Enum.map(fn {_, piece} -> piece end)
+    |> Enum.map(fn {_coord, piece} -> piece end)
   end
 
   @doc """
@@ -236,24 +251,24 @@ defmodule Game.Board do
   [1, 0, -0.67, :empty, -1] -> [1, 0, -0.67]
   """
   def get_involved_pieces(pieces) do
-    List.foldr(pieces, [], 
-      fn piece, acc ->
-        case piece do
-          {:empty} -> []
-          _ -> [piece | acc]
-        end
-      end)
+    List.foldr(pieces, [], fn piece, acc ->
+      case piece do
+        {:empty} -> []
+        _ -> [piece | acc]
+      end
+    end)
   end
 
   @doc """
   Changes general push str to specific direction only
   """
-  def applicable_str(pieces = [pusher | rest]) do
+  def applicable_str(pieces = [pusher | _rest]) do
     case pusher do
       {0, _} ->
-        Enum.map(pieces, &(elem(&1, 2)))
+        Enum.map(pieces, &elem(&1, 2))
+
       {_, 0} ->
-        Enum.map(pieces, &(elem(&1, 1)))
+        Enum.map(pieces, &elem(&1, 1))
     end
   end
 
@@ -261,23 +276,23 @@ defmodule Game.Board do
   Drops pieces behind the pusher from the list
   """
   def remove_pieces_behind(pieces, pusher) do
-    List.drop(pieces, pusher)
+    Enum.drop(pieces, pusher)
   end
 
   @doc """
   Pass in pusher and board and it will calculate if
   the push is valid
   """
-  def is_pushable?(board, pusher_coords) do
-    pusher_direction = get_direction_of(pusher_coords)
+  def is_pushable?(board, _pusher_coords) do
+    # TODO: This needs completed. This is just a basic template for
+    # TODO: the goal in mind
+    # pusher_direction = get_direction_of(pusher_coords)
+
     board
     |> get_row(1)
     |> get_involved_pieces()
-    |> Enum.map(&(get_push_strength(&1)))
+    |> Enum.map(&get_push_strength(&1))
     |> applicable_str()
     |> calculate_push()
-
   end
-
-
 end

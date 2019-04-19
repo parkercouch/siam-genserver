@@ -1,4 +1,7 @@
 defmodule Game.BoardTest do
+  @moduledoc """
+  Unit tests for the Board Module
+  """
   use ExUnit.Case
   doctest Game.Board
 
@@ -34,11 +37,11 @@ defmodule Game.BoardTest do
 
   test "Get player from piece tuple" do
     board = Board.new_board()
-    board = %{board | {1,1} => {:elephant, :up}, {1, 2} => {:rhino, :down}}
-    elephant = Board.get_player_at(board[{1,1}])
-    rhino = Board.get_player_at(board[{1,2}])
-    mountain = Board.get_player_at(board[{3,3}])
-    empty = Board.get_player_at(board[{5,5}])
+    board = %{board | {1, 1} => {:elephant, :up}, {1, 2} => {:rhino, :down}}
+    elephant = Board.get_player_at(board[{1, 1}])
+    rhino = Board.get_player_at(board[{1, 2}])
+    mountain = Board.get_player_at(board[{3, 3}])
+    empty = Board.get_player_at(board[{5, 5}])
 
     assert elephant == :elephant
     assert rhino == :rhino
@@ -67,11 +70,13 @@ defmodule Game.BoardTest do
 
   test "Is in front?" do
     board = Board.new_board()
-    board = %{board |
-      {2, 2} => {:elephant, :right},
-      {2, 4} => {:rhino, :up},
-      {4, 2} => {:elephant, :down},
-      {4, 4} => {:rhino, :left},
+
+    board = %{
+      board
+      | {2, 2} => {:elephant, :right},
+        {2, 4} => {:rhino, :up},
+        {4, 2} => {:elephant, :down},
+        {4, 4} => {:rhino, :left}
     }
 
     # up
@@ -147,6 +152,11 @@ defmodule Game.BoardTest do
 
   test "Get pieces involved in push" do
     row = [{:elephant, :right}, {:mountain, :neutral}, {:rhino, :up}, {:empty}, {:rhino, :left}]
-    assert Board.get_involved_pieces(row) == [{:elephant, :right}, {:mountain, :neutral}, {:rhino, :up}]
+
+    assert Board.get_involved_pieces(row) == [
+             {:elephant, :right},
+             {:mountain, :neutral},
+             {:rhino, :up}
+           ]
   end
 end

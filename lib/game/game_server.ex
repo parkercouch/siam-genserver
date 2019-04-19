@@ -5,11 +5,19 @@ defmodule Game.Server do
   use GenServer
 
   alias Game.Logic, as: Logic
-  alias Game.Board, as: Board
+  alias Game.TurnState, as: TurnState
+
+  @type turn :: TurnState.t()
+  @type game_state :: [turn]
+
+  @type move_response :: Logic.move_response
+
+  @type meta_response :: {:ok, game_state} | {:error, String.t()}
 
   @doc """
   Start Game Server Process
   """
+  @spec start :: {:ok, pid}
   def start do
     GenServer.start(Game.Server, nil)
   end
@@ -22,6 +30,7 @@ defmodule Game.Server do
 
   Returns {:ok, new_state} or {:error, message}
   """
+  @spec move(pid, Logic.move_data) :: move_response
   def move(pid, move_data) do
     GenServer.call(pid, {:move, move_data})
   end
@@ -29,6 +38,7 @@ defmodule Game.Server do
   @doc """
   Reset actions on current turn
   """
+  @spec undo_move(pid) :: meta_response
   def undo_move(pid) do
     GenServer.call(pid, {:undo_move})
   end
@@ -42,6 +52,7 @@ defmodule Game.Server do
 
   Error is returned on first turn
   """
+  @spec undo_turn(pid) :: meta_response
   def undo_turn(pid) do
     GenServer.call(pid, {:undo_turn})
   end
@@ -49,6 +60,7 @@ defmodule Game.Server do
   @doc """
   Get current turn data
   """
+  @spec get_turn(pid) :: turn
   def get_turn(pid) do
     GenServer.call(pid, {:get_turn})
   end
@@ -56,23 +68,14 @@ defmodule Game.Server do
   @doc """
   Get entire game state (and history)
   """
+  @spec get_state(pid) :: game_state
   def get_state(pid) do
     GenServer.call(pid, {:get_state})
   end
 
+  @spec init(any()) :: {:ok, game_state}
   def init(_) do
-    starting_state = %{
-      board: Board.new_board(),
-      bullpen: %{elephant: 5, rhino: 5},
-      current_player: :elephant,
-      turn_number: 0,
-      winner: nil,
-      selected: nil,
-      targeted: nil,
-      action: nil,
-    }
-
-    {:ok, [starting_state]}
+    {:ok, [%TurnState{}]}
   end
 
   def handle_call({:move, move_data}, _, [current_turn | previous_turns] = state) do
@@ -84,11 +87,11 @@ defmodule Game.Server do
         {:reply, response, state}
 
       {:next, updated_turn, next_turn} ->
-        updated_state = [next_turn | [updated_turn | previous_turns]]
+        updated_state = [next_turn, updated_turn | previous_turns]
         {:reply, {:next, updated_turn, next_turn}, updated_state}
 
       {:win, updated_turn, final_turn} ->
-        updated_state = [final_turn | [updated_turn | previous_turns]]
+        updated_state = [final_turn, updated_turn | previous_turns]
         {:reply, {:win, updated_turn, final_turn}, updated_state}
     end
   end
@@ -106,15 +109,16 @@ defmodule Game.Server do
   # Remove actions from current turn
   def handle_call({:undo_move}, _, [current_turn | previous_turns]) do
     updated_turn = %{current_turn | selected: nil, targeted: nil, action: nil}
-    {:reply, {:ok, updated_turn}, [updated_turn | previous_turns]}
+    updated_state = [updated_turn | previous_turns]
+    {:reply, {:ok, updated_state}, updated_state}
   end
 
   # Remove current turn and actions from prev turn
-  def handle_call({:undo_turn}, _, [first_turn | []] = state) do
+  def handle_call({:undo_turn}, _, [_first_turn | []] = state) do
     {:reply, {:error, "Can't undo on first turn!"}, state}
   end
 
-  def handle_call({:undo_turn}, _, [_current_turn | [prev_turn | tail]]) do
+  def handle_call({:undo_turn}, _, [_current_turn, prev_turn | tail]) do
     prev_turn = %{prev_turn | selected: nil, targeted: nil, action: nil}
     updated_state = [prev_turn | tail]
     {:reply, {:ok, updated_state}, updated_state}
