@@ -15,6 +15,7 @@ defmodule Game.Board do
 
 
   @type coord :: 1..5
+  @type index :: 0..4
   @type xy_coord :: {coord, coord}
 
   @type move_direction :: :up | :down | :left | :right
@@ -112,12 +113,14 @@ defmodule Game.Board do
   @doc """
   Pulls out player info from piece tuple
   """
+  @spec get_player_at(piece) :: player | :mountain | :empty
   def get_player_at({:empty}), do: :empty
   def get_player_at({piece, _}), do: piece
 
   @doc """
   Pulls out the direction info from a piece
   """
+  @spec get_direction_of(piece) :: direction
   def get_direction_of({:empty}), do: :neutral
   def get_direction_of({_, direction}), do: direction
 
@@ -127,6 +130,7 @@ defmodule Game.Board do
 
   {x,y} -> Bool
   """
+  @spec on_edge?(xy_coord) :: boolean
   def on_edge?({1, _y}), do: true
   def on_edge?({5, _y}), do: true
   def on_edge?({_x, 1}), do: true
@@ -138,6 +142,7 @@ defmodule Game.Board do
 
   {x, y} -> Bool
   """
+  @spec on_corner?(xy_coord) :: boolean
   def on_corner?({1, 1}), do: true
   def on_corner?({1, 5}), do: true
   def on_corner?({5, 1}), do: true
@@ -150,12 +155,14 @@ defmodule Game.Board do
 
   {x, y}, {x, y} -> Bool
   """
+  @spec is_orthogonal?(xy_coord, xy_coord) :: boolean
   def is_orthogonal?({x1, y1}, {x2, y2}) do
     delta_x = delta(x1, x2)
     delta_y = delta(y1, y2)
     delta_x + delta_y < 2
   end
 
+  @spec delta(integer, integer) :: integer
   defp delta(a, b) when a >= b, do: a - b
   defp delta(a, b) when a < b, do: b - a
 
@@ -165,6 +172,7 @@ defmodule Game.Board do
 
   board, {x,y}, {x,y} -> board
   """
+  @spec move_piece(board, xy_coord, xy_coord) :: board
   def move_piece(board, start, target) do
     %{board | target => board[start], start => {:empty}}
   end
@@ -174,11 +182,13 @@ defmodule Game.Board do
 
   board, {x, y}, {x, y} -> Bool
   """
+  @spec is_in_front?(board, xy_coord, xy_coord) :: boolean
   def is_in_front?(board, selected, target) do
     direction = get_direction_of(board[selected])
     in_front_helper(direction, selected, target)
   end
 
+  @spec in_front_helper(move_direction, xy_coord, xy_coord) :: boolean
   defp in_front_helper(:up, {x1, y1}, {x2, y2}), do: x1 == x2 and y2 - y1 == 1
   defp in_front_helper(:down, {x1, y1}, {x2, y2}), do: x1 == x2 and y1 - y2 == 1
   defp in_front_helper(:left, {x1, y1}, {x2, y2}), do: y1 == y2 and x1 - x2 == 1
@@ -188,6 +198,7 @@ defmodule Game.Board do
   Takes a board + pusher info and returns the row or column involved
   """
   # TODO: add list flipping here??
+  @spec get_row_or_col(board, xy_coord, move_direction) :: [piece]
   def get_row_or_col(board, {x, _y}, :up), do: get_column(board, x)
   def get_row_or_col(board, {x, _y}, :down), do: get_column(board, x)
   def get_row_or_col(board, {_x, y}, :left), do: get_row(board, y)
@@ -200,6 +211,7 @@ defmodule Game.Board do
   Index 0 -> x: 1
   [{:empty}, {:mountain, :neutral},...]
   """
+  @spec get_row(board, coord) :: [piece]
   def get_row(board, index) do
     board
     |> Map.to_list()
@@ -214,6 +226,7 @@ defmodule Game.Board do
   Index 0 -> y: 1
   [{:empty}, {:mountain, :neutral},...]
   """
+  @spec get_column(board, coord) :: [piece]
   def get_column(board, index) do
     board
     |> Map.to_list()
@@ -234,6 +247,7 @@ defmodule Game.Board do
   per mountain, but it doesn't count as a pusher itself
   Using an round number instead would make things tie and not push
   """
+  @spec get_push_strength(piece) :: {number, number}
   def get_push_strength({_, :up}), do: {0, 1}
   def get_push_strength({_, :down}), do: {0, -1}
   def get_push_strength({_, :left}), do: {-1, 0}
@@ -247,6 +261,7 @@ defmodule Game.Board do
   [1, 0, -0.67, -1] -> False
   1 > 1.67 -> False
   """
+  @spec calculate_push([number]) :: boolean
   def calculate_push([pusher_str | rest_str]) do
     sum_of_rest = Enum.sum(rest_str)
     abs(pusher_str) > abs(sum_of_rest)
@@ -259,6 +274,7 @@ defmodule Game.Board do
 
   [1, 0, -0.67, :empty, -1] -> [1, 0, -0.67]
   """
+  @spec get_involved_pieces([number]) :: [number]
   def get_involved_pieces(pieces) do
     List.foldr(pieces, [], fn piece, acc ->
       case piece do
@@ -271,6 +287,7 @@ defmodule Game.Board do
   @doc """
   Changes general push str to specific direction only
   """
+  @spec applicable_str([{number, number}]) :: [number]
   def applicable_str(pieces = [pusher | _rest]) do
     case pusher do
       {0, _} ->
@@ -292,6 +309,7 @@ defmodule Game.Board do
   @doc """
   Drops pieces behind the pusher from the list
   """
+  @spec remove_pieces_behind([piece], index) :: [piece]
   def remove_pieces_behind(pieces, pusher) do
     Enum.drop(pieces, pusher)
   end
@@ -299,6 +317,7 @@ defmodule Game.Board do
   @doc """
   Return list index of pusher based on direction
   """
+  @spec get_pusher_index(xy_coord, move_direction) :: index
   def get_pusher_index({x, _y}, :right), do: x - 1
   def get_pusher_index({x, _y}, :left), do: 4 - (x - 1)
   def get_pusher_index({_x, y}, :up), do: y - 1
@@ -308,6 +327,7 @@ defmodule Game.Board do
   Pass in pusher coords and board and it will calculate if
   the push is valid
   """
+  @spec is_pushable?(board, xy_coord) :: boolean
   def is_pushable?(board, pusher_coords) do
     {_player, pusher_direction} = board[pusher_coords]
     pusher_index = get_pusher_index(pusher_coords, pusher_direction)

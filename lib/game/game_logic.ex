@@ -141,7 +141,7 @@ defmodule Game.Logic do
   # Target another piece/square
   defp handle_target(turn = %TurnState{board: board}, selected = {_x, _y}, target) do
     if Board.is_orthogonal?(selected, target) do
-      target_piece = Board.get_player_at(board[target])
+      target_piece = board[target]
       move_or_push(turn, selected, target, target_piece)
     else
       {:not_valid, "You can't move more than 1 space or diagonal"}
@@ -153,7 +153,7 @@ defmodule Game.Logic do
   end
 
   @spec move_or_push(turn, TurnState.selectable, TurnState.selectable, Board.piece) :: move_response
-  defp move_or_push(turn = %{board: board}, selected, target, :empty) do
+  defp move_or_push(turn = %TurnState{board: board}, selected, target, {:empty}) do
     {:continue, %{turn | targeted: target, board: Board.move_piece(board, selected, target)}}
   end
 
