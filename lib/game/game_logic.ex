@@ -14,9 +14,14 @@ defmodule Game.Logic do
   alias Game.Board, as: Board
   alias Game.TurnState, as: TurnState
 
+  @type select_action :: {Board.player, :select, TurnState.selectable}
+  @type target_action :: {Board.player, :target, TurnState.selectable}
 
-  @type move_actions :: :select | :target | :finalize
-  @type move_data :: {Board.player, move_actions, TurnState.selectable}
+  @type finalize_confirmation :: Board.move_direction | :confirm
+  @type finalize_action :: {Board.player, :finalize, finalize_confirmation}
+
+  @type move_data :: select_action | target_action | finalize_action
+
   @type turn :: TurnState.t()
 
   @type move_response :: {:continue, turn} |
@@ -108,7 +113,6 @@ defmodule Game.Logic do
   # Not valid target after selecting bullpen
   defp handle_target(_turn, _selected = :bullpen, _target), do: {:not_valid, "Not a valid target"}
 
-  # defp handle_target(_location, turn, _selected = :bullpen), do: {:not_valid, "Not a valid target"}
 
   # Withdraw
   defp handle_target(turn, selected = {_x, _y}, _target = :bullpen) do
@@ -134,7 +138,6 @@ defmodule Game.Logic do
 
   # Target self
   defp handle_target(turn, selected = {_x, _y}, target) when selected == target do
-    # defp handle_target(location, turn, {_x, _y} = selected) when location == selected do
     {:continue, %{turn | targeted: target}}
   end
 
@@ -157,9 +160,15 @@ defmodule Game.Logic do
     {:continue, %{turn | targeted: target, board: Board.move_piece(board, selected, target)}}
   end
 
-  defp move_or_push(_turn, _selected, _target, _target_piece) do
-    {:not_valid, "** Not implemented yet **"}
+  defp move_or_push(_turn = %TurnState{board: board}, selected, target, _target_piece) do
+    if Board.is_in_front?(board, selected, target) do
+      {:not_valid, "NOT READY YET"}
+    else
+      {:not_valid, "Can't push that direction"}
+    end
   end
+
+
 
   #
   # Finalizing

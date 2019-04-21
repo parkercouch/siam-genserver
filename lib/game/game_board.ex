@@ -19,6 +19,13 @@ defmodule Game.Board do
   @type xy_coord :: {coord, coord}
 
   @type move_direction :: :up | :down | :left | :right
+
+  defguard is_valid_direction?(direction)
+    when direction == :up
+    or direction == :down
+    or direction == :left
+    or direction == :right
+
   @type direction :: move_direction | :neutral
   @type player :: :elephant | :rhino
 
@@ -149,6 +156,20 @@ defmodule Game.Board do
   def on_corner?({5, 5}), do: true
   def on_corner?(_), do: false
 
+  def x_to_direction(1), do: :right
+  def x_to_direction(5), do: :left
+
+  def y_to_direction(1), do: :up
+  def y_to_direction(5), do: :down
+
+  defguard is_on_corner?(xy)
+    when xy == {1, 1}
+    or xy == {1, 5}
+    or xy == {5, 1}
+    or xy == {5, 5}
+
+  defguard is_on_edge?(x_or_y) when x_or_y == 1 or x_or_y == 5
+
   @doc """
   Checks if two coordinates are within 1 space
   and not diagonal
@@ -272,9 +293,10 @@ defmodule Game.Board do
   Takes a list with pusher as head and the rest of the row as tail
   Returns a list with pusher at head and only involved pieces as tail
 
-  [1, 0, -0.67, :empty, -1] -> [1, 0, -0.67]
+  [{:rhino, :right}, {:elephant, :up}, {:mountain, :neutral}, {:empty}, {:rhino, :right}]
+  -> [{:rhino, :right}, {:elephant, :up}, {:mountain, :neutral}]
   """
-  @spec get_involved_pieces([number]) :: [number]
+  @spec get_involved_pieces([piece]) :: [piece]
   def get_involved_pieces(pieces) do
     List.foldr(pieces, [], fn piece, acc ->
       case piece do
@@ -287,15 +309,16 @@ defmodule Game.Board do
   @doc """
   Changes general push str to specific direction only
   """
-  @spec applicable_str([{number, number}]) :: [number]
-  def applicable_str(pieces = [pusher | _rest]) do
-    case pusher do
-      {0, _} ->
-        Enum.map(pieces, &elem(&1, 1))
-
-      {_, 0} ->
-        Enum.map(pieces, &elem(&1, 0))
+  @spec get_applicable_strength([piece]) :: [number]
+  def get_applicable_strength(pieces = [pusher | _rest]) do
+    index = case get_push_strength(pusher) do
+      {0, _} -> 1
+      {_, 0} -> 0
     end
+
+    pieces
+    |> Stream.map(&get_push_strength/1)
+    |> Enum.map(&elem(&1, index))
   end
 
   @doc """
@@ -324,6 +347,19 @@ defmodule Game.Board do
   def get_pusher_index({_x, y}, :down), do: 4 - (y - 1)
 
   @doc """
+  Add pusher to list to calculate push
+  Used when moving from off board
+
+  :elephant is used to satisfy types
+  will be removed in pipeline since only direction matters
+  in the push calculation
+  """
+  @spec add_pusher_placeholder_to_list([piece], move_direction) :: [piece]
+  def add_pusher_placeholder_to_list(list, direction) do
+    [{:elephant, direction} | list]
+  end
+
+  @doc """
   Pass in pusher coords and board and it will calculate if
   the push is valid
   """
@@ -337,8 +373,21 @@ defmodule Game.Board do
     |> orientate_list(pusher_direction)
     |> remove_pieces_behind(pusher_index)
     |> get_involved_pieces()
-    |> Enum.map(&get_push_strength(&1))
-    |> applicable_str()
+    |> get_applicable_strength()
+    |> calculate_push()
+  end
+
+  @doc """
+  Calculates if push is valid from edge of board
+  """
+  @spec is_pushable_from_edge?(board, xy_coord, move_direction) :: boolean
+  def is_pushable_from_edge?(board, target, push_direction) do
+    board
+    |> get_row_or_col(target, push_direction)
+    |> orientate_list(push_direction)
+    |> get_involved_pieces()
+    |> add_pusher_placeholder_to_list(push_direction)
+    |> get_applicable_strength()
     |> calculate_push()
   end
 end

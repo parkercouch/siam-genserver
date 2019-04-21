@@ -7,6 +7,7 @@ defmodule Game.TurnState do
   @type bullpen :: %{elephant: 0..5, rhino: 0..5}
   @type selectable :: Board.xy_coord | :bullpen
   @type action :: {:move_and_rotate, Board.move_direction} |
+                  {:push_from_off_board, Board.move_direction} |
                   {:push, Board.move_direction} |
                   {:rotate_in_place, Board.move_direction} |
                   {:withdraw}
@@ -20,6 +21,7 @@ defmodule Game.TurnState do
     selected: selectable | nil,
     targeted: selectable | nil,
     action: action | nil,
+    completed: boolean
   }
   defstruct(
     board: Board.new_board(),
@@ -29,7 +31,8 @@ defmodule Game.TurnState do
     winner: nil,
     selected: nil,
     targeted: nil,
-    action: nil
+    action: nil,
+    completed: false
   )
 
 

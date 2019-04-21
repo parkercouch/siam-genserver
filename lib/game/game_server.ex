@@ -5,6 +5,7 @@ defmodule Game.Server do
   use GenServer
 
   alias Game.Logic, as: Logic
+  alias Game.Validation, as: Validation
   alias Game.TurnState, as: TurnState
 
   @type turn :: TurnState.t()
@@ -78,23 +79,6 @@ defmodule Game.Server do
     {:ok, [%TurnState{}]}
   end
 
-  def handle_call({:move, move_data}, _, [current_turn | previous_turns] = state) do
-    case Logic.process_move(move_data, current_turn) do
-      {:continue, updated_turn} = response ->
-        {:reply, response, [updated_turn | previous_turns]}
-
-      {:not_valid, _message} = response ->
-        {:reply, response, state}
-
-      {:next, updated_turn, next_turn} ->
-        updated_state = [next_turn, updated_turn | previous_turns]
-        {:reply, {:next, updated_turn, next_turn}, updated_state}
-
-      {:win, updated_turn, final_turn} ->
-        updated_state = [final_turn, updated_turn | previous_turns]
-        {:reply, {:win, updated_turn, final_turn}, updated_state}
-    end
-  end
 
   # Return current turn of state
   def handle_call({:get_turn}, _, [current_turn | _previous_turns] = state) do
@@ -122,5 +106,34 @@ defmodule Game.Server do
     prev_turn = %{prev_turn | selected: nil, targeted: nil, action: nil}
     updated_state = [prev_turn | tail]
     {:reply, {:ok, updated_state}, updated_state}
+  end
+
+  def handle_call({:move, move_data}, _, [current_turn | _previous_turn] = state) do
+    case Validation.validate_move(current_turn, move_data) do
+      :valid ->
+        update_state_and_respond(move_data, state)
+
+      not_valid_response ->
+        {:reply, not_valid_response, state}
+    end
+  end
+
+  @spec update_state_and_respond(Logic.move_data, game_state) :: {:reply, Logic.move_response, game_state}
+  defp update_state_and_respond(move_data, [current_turn | previous_turns] = state) do
+    case Logic.process_move(move_data, current_turn) do
+      {:continue, updated_turn} = response ->
+        {:reply, response, [updated_turn | previous_turns]}
+
+      {:next, updated_turn, next_turn} ->
+        updated_state = [next_turn, updated_turn | previous_turns]
+        {:reply, {:next, updated_turn, next_turn}, updated_state}
+
+      {:win, updated_turn, final_turn} ->
+        updated_state = [final_turn, updated_turn | previous_turns]
+        {:reply, {:win, updated_turn, final_turn}, updated_state}
+
+      _ ->
+        {:reply, {:not_valid, "That's not valid"}, state}
+    end
   end
 end
