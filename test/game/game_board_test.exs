@@ -128,7 +128,7 @@ defmodule Game.BoardTest do
     board = Board.new_board()
     board = %{board | {1, 3} => {:elephant, :up}}
 
-    [one, two, three, four, five] = Board.get_row(board, 3)
+    [one, two, three, four, five] = Board.get_row(board, 3) |> Board.extract_pieces()
 
     assert one == {:elephant, :up}
     assert two == {:mountain, :neutral}
@@ -141,7 +141,7 @@ defmodule Game.BoardTest do
     board = Board.new_board()
     board = %{board | {3, 1} => {:elephant, :up}}
 
-    [one, two, three, four, five] = Board.get_column(board, 3)
+    [one, two, three, four, five] = Board.get_column(board, 3) |> Board.extract_pieces()
 
     assert one == {:elephant, :up}
     assert two == {:empty}

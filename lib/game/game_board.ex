@@ -13,7 +13,6 @@ defmodule Game.Board do
   :up, :down, :left, :right, :neutral
   """
 
-
   @type coord :: 1..5
   @type index :: 0..4
   @type xy_coord :: {coord, coord}
@@ -21,16 +20,15 @@ defmodule Game.Board do
   @type move_direction :: :up | :down | :left | :right
 
   defguard is_valid_direction?(direction)
-    when direction == :up
-    or direction == :down
-    or direction == :left
-    or direction == :right
+           when direction == :up or
+                  direction == :down or
+                  direction == :left or
+                  direction == :right
 
   @type direction :: move_direction | :neutral
   @type player :: :elephant | :rhino
 
   @type piece :: {player, direction} | {:mountain, :neutral} | {:empty}
-
 
   @type board :: %{xy_coord => piece}
 
@@ -137,11 +135,13 @@ defmodule Game.Board do
 
   {x,y} -> Bool
   """
-  @spec on_edge?(xy_coord) :: boolean
+  @spec on_edge?(xy_coord | coord) :: boolean
   def on_edge?({1, _y}), do: true
   def on_edge?({5, _y}), do: true
   def on_edge?({_x, 1}), do: true
   def on_edge?({_x, 5}), do: true
+  def on_edge?(1), do: true
+  def on_edge?(5), do: true
   def on_edge?(_), do: false
 
   @doc """
@@ -156,17 +156,30 @@ defmodule Game.Board do
   def on_corner?({5, 5}), do: true
   def on_corner?(_), do: false
 
+  @spec x_to_direction(coord) :: direction
   def x_to_direction(1), do: :right
   def x_to_direction(5), do: :left
+  def x_to_direction(_), do: :neutral
 
+  @spec y_to_direction(coord) :: direction
   def y_to_direction(1), do: :up
   def y_to_direction(5), do: :down
+  def y_to_direction(_), do: :neutral
+
+  @spec xy_to_push_from_edge_direction(xy_coord) :: direction
+  def xy_to_push_from_edge_direction({x, y}) do
+    case {on_edge?(x), on_edge?(y)} do
+      {true, _} -> x_to_direction(x)
+      {_, true} -> y_to_direction(y)
+      _ -> :neutral
+    end
+  end
 
   defguard is_on_corner?(xy)
-    when xy == {1, 1}
-    or xy == {1, 5}
-    or xy == {5, 1}
-    or xy == {5, 5}
+           when xy == {1, 1} or
+                  xy == {1, 5} or
+                  xy == {5, 1} or
+                  xy == {5, 5}
 
   defguard is_on_edge?(x_or_y) when x_or_y == 1 or x_or_y == 5
 
@@ -199,6 +212,54 @@ defmodule Game.Board do
   end
 
   @doc """
+  Takes a list of pushed row and updates all the coords
+  to their new positions
+  """
+  def update_coords_of_pushed(row_or_col, direction) do
+    Enum.map(row_or_col, &update_coords(&1, direction))
+  end
+
+  def update_coords({{x, y}, piece}, :up) do
+    new_coords = if y == 5, do: :off, else: {x, y + 1}
+    {new_coords, piece}
+  end
+
+  def update_coords({{x, y}, piece}, :down) do
+    new_coords = if y == 1, do: :off, else: {x, y - 1}
+    {new_coords, piece}
+  end
+
+  def update_coords({{x, y}, piece}, :left) do
+    new_coords = if x == 1, do: :off, else: {x - 1, y}
+    {new_coords, piece}
+  end
+
+  def update_coords({{x, y}, piece}, :right) do
+    new_coords = if x == 5, do: :off, else: {x + 1, y}
+    {new_coords, piece}
+  end
+
+  @doc """
+  Takes list of pieces with pusher at the end
+  Updates coords of all pieces
+  """
+  def move_pieces_in_row(row, :up) do
+    Enum.map(row, fn {{x, y}, piece} -> {{x, y + 1}, piece} end)
+  end
+
+  def move_pieces_in_row(row, :down) do
+    Enum.map(row, fn {{x, y}, piece} -> {{x, y - 1}, piece} end)
+  end
+
+  def move_pieces_in_row(row, :left) do
+    Enum.map(row, fn {{x, y}, piece} -> {{x - 1, y}, piece} end)
+  end
+
+  def move_pieces_in_row(row, :right) do
+    Enum.map(row, fn {{x, y}, piece} -> {{x + 1, y}, piece} end)
+  end
+
+  @doc """
   Checks if location is in front of piece
 
   board, {x, y}, {x, y} -> Bool
@@ -218,7 +279,6 @@ defmodule Game.Board do
   @doc """
   Takes a board + pusher info and returns the row or column involved
   """
-  # TODO: add list flipping here??
   @spec get_row_or_col(board, xy_coord, move_direction) :: [piece]
   def get_row_or_col(board, {x, _y}, :up), do: get_column(board, x)
   def get_row_or_col(board, {x, _y}, :down), do: get_column(board, x)
@@ -236,8 +296,10 @@ defmodule Game.Board do
   def get_row(board, index) do
     board
     |> Map.to_list()
-    |> Stream.filter(fn {{_x, y}, _piece} -> y == index end)
-    |> Enum.map(fn {_coord, piece} -> piece end)
+    |> Enum.filter(fn {{_x, y}, _piece} -> y == index end)
+
+    # |> Stream.filter(fn {{_x, y}, _piece} -> y == index end)
+    # |> Enum.map(fn {_coord, piece} -> piece end)
   end
 
   @doc """
@@ -251,8 +313,18 @@ defmodule Game.Board do
   def get_column(board, index) do
     board
     |> Map.to_list()
-    |> Stream.filter(fn {{x, _y}, _piece} -> x == index end)
-    |> Enum.map(fn {_coord, piece} -> piece end)
+    |> Enum.filter(fn {{x, _y}, _piece} -> x == index end)
+
+    # |> Stream.filter(fn {{x, _y}, _piece} -> x == index end)
+    # |> Enum.map(fn {_coord, piece} -> piece end)
+  end
+
+  @doc """
+  Extracts piece info out of row/col to do push calcs with
+  """
+  @spec extract_pieces([{xy_coord, piece}]) :: [piece]
+  def extract_pieces(row_or_col) do
+    Enum.map(row_or_col, fn {_coord, piece} -> piece end)
   end
 
   @doc """
@@ -311,10 +383,11 @@ defmodule Game.Board do
   """
   @spec get_applicable_strength([piece]) :: [number]
   def get_applicable_strength(pieces = [pusher | _rest]) do
-    index = case get_push_strength(pusher) do
-      {0, _} -> 1
-      {_, 0} -> 0
-    end
+    index =
+      case get_push_strength(pusher) do
+        {0, _} -> 1
+        {_, 0} -> 0
+      end
 
     pieces
     |> Stream.map(&get_push_strength/1)
@@ -324,10 +397,18 @@ defmodule Game.Board do
   @doc """
   Reverses list if pusher is down or left (opposite of natural row/col direction)
   """
-  @spec orientate_list([piece], move_direction) :: [piece]
-  def orientate_list(column, :up), do: column
-  def orientate_list(row, :right), do: row
-  def orientate_list(row_or_col, _), do: Enum.reverse(row_or_col)
+  @spec orientate_pusher_to_head([piece], move_direction) :: [piece]
+  def orientate_pusher_to_head(column, :up), do: column
+  def orientate_pusher_to_head(row, :right), do: row
+  def orientate_pusher_to_head(row_or_col, _), do: Enum.reverse(row_or_col)
+
+  @doc """
+  Reverses list if pusher is right or up (natural row/col direction)
+  """
+  @spec orientate_pusher_to_tail([piece], move_direction) :: [piece]
+  def orientate_pusher_to_tail(column, :down), do: column
+  def orientate_pusher_to_tail(row, :left), do: row
+  def orientate_pusher_to_tail(row_or_col, _), do: Enum.reverse(row_or_col)
 
   @doc """
   Drops pieces behind the pusher from the list
@@ -360,6 +441,15 @@ defmodule Game.Board do
   end
 
   @doc """
+  Adds an empty piece behind the pusher
+  This will make merging the pushed row with the board cleaner
+  """
+  @spec add_empty_behind_pusher([{xy_coord, piece}], xy_coord) :: [{xy_coord, piece}]
+  def add_empty_behind_pusher(pieces, pusher_starting_coords) do
+    [{pusher_starting_coords, {:empty}} | pieces]
+  end
+
+  @doc """
   Pass in pusher coords and board and it will calculate if
   the push is valid
   """
@@ -370,7 +460,8 @@ defmodule Game.Board do
 
     board
     |> get_row_or_col(pusher_coords, pusher_direction)
-    |> orientate_list(pusher_direction)
+    |> extract_pieces()
+    |> orientate_pusher_to_head(pusher_direction)
     |> remove_pieces_behind(pusher_index)
     |> get_involved_pieces()
     |> get_applicable_strength()
@@ -384,10 +475,41 @@ defmodule Game.Board do
   def is_pushable_from_edge?(board, target, push_direction) do
     board
     |> get_row_or_col(target, push_direction)
-    |> orientate_list(push_direction)
+    |> extract_pieces()
+    |> orientate_pusher_to_head(push_direction)
     |> get_involved_pieces()
     |> add_pusher_placeholder_to_list(push_direction)
     |> get_applicable_strength()
     |> calculate_push()
+  end
+
+  # {:off, :elephant, [{{x, y}, {...}}, ...]}
+
+  @spec push_row(board, xy_coord, move_direction) :: [{xy_coord | :off, piece}]
+  def push_row(board, pusher_coords, pusher_direction) do
+    pusher_index = get_pusher_index(pusher_coords, pusher_direction)
+
+    board
+    |> get_row_or_col(pusher_coords, pusher_direction)
+    |> orientate_pusher_to_head(pusher_direction)
+    |> remove_pieces_behind(pusher_index)
+    |> get_involved_pieces()
+    # |> orientate_pusher_to_tail(pusher_direction)
+    |> update_coords_of_pushed(pusher_direction)
+    |> add_empty_behind_pusher(pusher_coords)
+    |> Enum.reverse()
+  end
+
+  @spec get_closest_pusher([{xy_coord, piece}], move_direction) :: player
+  def get_closest_pusher(pushed_row, push_direction) do
+    {_xy, player} =
+      Enum.find(
+        pushed_row,
+        fn {_xy, {_player, piece_direction}} ->
+          piece_direction == push_direction
+        end
+      )
+
+    player
   end
 end

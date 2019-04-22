@@ -82,6 +82,11 @@ defmodule Game.Validation do
     {:not_valid, "You must select something first"}
   end
 
+  # Trying to target again
+  defp validate_target(_turn = %TurnState{targeted: targeted}, _selected, _target) when targeted != nil do
+    {:not_valid, "Something is already targeted!"}
+  end
+
   # Select bullpen then target square to move piece to
   defp validate_target(turn = %TurnState{board: board}, _selected = :bullpen, target = {_x, _y}) do
     if Board.on_edge?(target) do
@@ -169,7 +174,7 @@ defmodule Game.Validation do
         confirm_rotation(board, selected, direction)
 
       {:push_from_off_board, _} ->
-        confirm_push_from_edge(board, target, direction)
+        confirm_push_direction_and_validate_push(board, target, direction)
 
       _ ->
         {:not_valid, "That action needs to be confirmed"}
@@ -178,6 +183,34 @@ defmodule Game.Validation do
 
   def validate_finalize(_, _), do: {:not_valid, "That isn't a valid message"}
 
+  @spec confirm_push_direction_and_validate_push(Board.board, Board.xy_coord, Board.move_direction) :: validation_response
+  defp confirm_push_direction_and_validate_push(board, target, direction) do
+    if is_valid_push_direction?(target, direction) do
+      confirm_push_from_edge(board, target, direction)
+    else
+      {:not_valid, "Can't push that direction"}
+    end
+  end
+
+  @spec is_valid_push_direction?(Board.xy_coord, Board.move_direction) :: boolean
+  defp is_valid_push_direction?(target = {x, y}, direction) when Board.is_on_corner?(target) do
+    x_push_direction = Board.x_to_direction(x)
+    y_push_direction = Board.y_to_direction(y)
+
+    direction == x_push_direction or direction == y_push_direction
+  end
+
+  defp is_valid_push_direction?({x, _y}, direction) when Board.is_on_edge?(x) do
+    x_push_direction = Board.x_to_direction(x)
+
+    direction == x_push_direction
+  end
+
+  defp is_valid_push_direction?({_x, y}, direction) when Board.is_on_edge?(y) do
+    y_push_direction = Board.y_to_direction(y)
+
+    direction == y_push_direction
+  end
 
   defp validate_push_from_edge(board, target = {x, y}) when Board.is_on_corner?(target) do
     x_push = Board.is_pushable_from_edge?(board, target, Board.x_to_direction(x))
@@ -198,6 +231,7 @@ defmodule Game.Validation do
     push_direction = Board.y_to_direction(y)
     confirm_push_from_edge(board, target, push_direction)
   end
+
   defp confirm_push_from_edge(board, target, direction) do
     if Board.is_pushable_from_edge?(board, target, direction) do
       :valid

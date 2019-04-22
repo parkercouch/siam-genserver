@@ -35,5 +35,37 @@ defmodule Game.TurnState do
     completed: false
   )
 
+  @spec next_turn(t, Board.board) :: t
+  def next_turn(turn, updated_board) do
+    %{turn |
+      board: updated_board,
+      turn_number: turn.turn_number + 1,
+      selected: nil,
+      targeted: nil,
+      action: nil,
+      completed: completed_if_winner(turn.winner),
+      current_player: next_player(turn.current_player)
+    }
+  end
 
+  @spec next_turn(t, Board.board, bullpen) :: t
+  def next_turn(turn, updated_board, updated_bullpen) do
+    %{turn |
+      bullpen: updated_bullpen,
+      board: updated_board,
+      turn_number: turn.turn_number + 1,
+      selected: nil,
+      targeted: nil,
+      action: nil,
+      completed: completed_if_winner(turn.winner),
+      current_player: next_player(turn.current_player)
+    }
+  end
+
+  @spec next_player(Board.player) :: Board.player
+  defp next_player(_current_player = :elephant), do: :rhino
+  defp next_player(_current_player = :rhino), do: :elephant
+
+  defp completed_if_winner(nil), do: false
+  defp completed_if_winner(_), do: true
 end
