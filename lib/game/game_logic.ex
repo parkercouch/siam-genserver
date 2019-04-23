@@ -151,16 +151,33 @@ defmodule Game.Logic do
     end
   end
 
+  # TODO: IMPLEMENT THIS!!!
   # Push from off board
-  defp handle_finalize(turn = %TurnState{action: {:push_from_off_board, _}}, _direction) do
-    updated_turn = turn
-    next_turn = turn
+  defp handle_finalize(turn = %TurnState{action: {:push_from_off_board, _}, board: board, targeted: target, current_player: player}, direction) do
+    pushed_row = [last_piece | rest_of_pieces] = Board.push_row_from_edge(board, target, player, direction)
 
-    {:next, updated_turn, next_turn}
+    case last_piece do
+      {:off, {:mountain, _}} ->
+        check_winner_and_respond(turn, rest_of_pieces)
+      {:off, {pushed_off_piece, _}} ->
+        add_to_bullpen_and_respond(turn, pushed_off_piece, rest_of_pieces)
+      {_, _} ->
+        update_board_and_respond(turn, pushed_row)
+    end
   end
 
 
   @spec check_winner_and_respond(turn, [{Board.xy_coord, Board.piece}]) :: move_response
+  defp check_winner_and_respond(turn = %TurnState{action: {_, direction}, board: board, selected: :bullpen, current_player: player, bullpen: bullpen}, pushed_row) do
+    winner = Board.get_closest_pusher(pushed_row, direction)
+
+    updated_turn = %{turn | completed: true, winner: winner}
+    updated_board = Map.merge(board, Map.new(pushed_row))
+    updated_bullpen = %{bullpen | player => bullpen[player] - 1}
+    final_turn = TurnState.next_turn(updated_turn, updated_board, updated_bullpen)
+
+    {:win, updated_turn, final_turn}
+  end
   defp check_winner_and_respond(turn = %TurnState{action: {_, direction}, board: board}, pushed_row) do
     winner = Board.get_closest_pusher(pushed_row, direction)
 
@@ -172,6 +189,16 @@ defmodule Game.Logic do
   end
 
   @spec add_to_bullpen_and_respond(turn, Board.player, [{Board.xy_coord, Board.piece}]) :: move_response
+  defp add_to_bullpen_and_respond(turn = %TurnState{board: board, bullpen: bullpen, selected: :bullpen, current_player: player}, owner_of_pushed_off_piece, pushed_row) do
+    updated_turn = %{turn | completed: true}
+    updated_bullpen = %{bullpen | owner_of_pushed_off_piece => bullpen[owner_of_pushed_off_piece] + 1}
+    updated_bullpen = %{updated_bullpen | player => updated_bullpen[player] - 1}
+    updated_board = Map.merge(board, Map.new(pushed_row))
+    next_turn = TurnState.next_turn(updated_turn, updated_board, updated_bullpen)
+
+    {:next, updated_turn, next_turn}
+  end
+
   defp add_to_bullpen_and_respond(turn = %TurnState{board: board, bullpen: bullpen}, owner_of_pushed_off_piece, pushed_row) do
     updated_turn = %{turn | completed: true}
     updated_bullpen = %{bullpen | owner_of_pushed_off_piece => bullpen[owner_of_pushed_off_piece] + 1}
@@ -182,6 +209,16 @@ defmodule Game.Logic do
   end
 
   @spec update_board_and_respond(turn, [{Board.xy_coord, Board.piece}]) :: move_response
+  defp update_board_and_respond(turn = %TurnState{board: board, selected: :bullpen, current_player: player, bullpen: bullpen}, pushed_row) do
+    updated_turn = %{turn | completed: true}
+    updated_board = Map.merge(board, Map.new(pushed_row))
+    updated_bullpen = %{bullpen | player => bullpen[player] - 1}
+
+    next_turn = TurnState.next_turn(updated_turn, updated_board, updated_bullpen)
+
+    {:next, updated_turn, next_turn}
+  end
+
   defp update_board_and_respond(turn = %TurnState{board: board}, pushed_row) do
     updated_turn = %{turn | completed: true}
     updated_board = Map.merge(board, Map.new(pushed_row))

@@ -378,7 +378,16 @@ defmodule Game.Board do
   [{:rhino, :right}, {:elephant, :up}, {:mountain, :neutral}, {:empty}, {:rhino, :right}]
   -> [{:rhino, :right}, {:elephant, :up}, {:mountain, :neutral}]
   """
-  @spec get_involved_pieces([piece]) :: [piece]
+  @spec get_involved_pieces([{xy_coord, piece}] | [piece]) :: [piece]
+  def get_involved_pieces(pieces = [{{_x, _y}, _} | _]) do
+    List.foldr(pieces, [], fn {coord, piece}, acc ->
+      case piece do
+        {:empty} -> []
+        _ -> [{coord, piece} | acc]
+      end
+    end)
+  end
+
   def get_involved_pieces(pieces) do
     List.foldr(pieces, [], fn piece, acc ->
       case piece do
@@ -387,6 +396,7 @@ defmodule Game.Board do
       end
     end)
   end
+
 
   @doc """
   Changes general push str to specific direction only
@@ -440,6 +450,12 @@ defmodule Game.Board do
   @spec add_pusher_placeholder_to_list([piece], move_direction) :: [piece]
   def add_pusher_placeholder_to_list(list, direction) do
     [{:elephant, direction} | list]
+  end
+
+
+  @spec add_pusher_to_list([{xy_coord, piece}], xy_coord, player, move_direction) :: [{xy_coord, piece}]
+  def add_pusher_to_list(list, target, player, direction) do
+    [{target, {player, direction}} | list]
   end
 
   @doc """
@@ -501,9 +517,20 @@ defmodule Game.Board do
     |> Enum.reverse()
   end
 
+  @spec push_row_from_edge(board, xy_coord, player, move_direction) :: [{xy_coord | :off, piece}]
+  def push_row_from_edge(board, target, player, push_direction) do
+    board
+    |> get_row_or_col(target, push_direction)
+    |> orientate_pusher_to_head(push_direction)
+    |> get_involved_pieces()
+    |> update_coords_of_pushed(push_direction)
+    |> add_pusher_to_list(target, player, push_direction)
+    |> Enum.reverse()
+  end
+
   @spec get_closest_pusher([{xy_coord, piece}], move_direction) :: player
   def get_closest_pusher(pushed_row, push_direction) do
-    {_xy, player} =
+    {_xy, {player, _direction}} =
       Enum.find(
         pushed_row,
         fn {_xy, {_player, piece_direction}} ->
