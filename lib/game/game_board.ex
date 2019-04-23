@@ -338,26 +338,36 @@ defmodule Game.Board do
   but only 3 can exist in this game)
   This is because mountains require one pusher to move
   per mountain, but it doesn't count as a pusher itself
-  Using an round number instead would make things tie and not push
+  Using a round number instead would make things tie and not push
   """
-  @spec get_push_strength(piece) :: {number, number}
-  def get_push_strength({_, :up}), do: {0, 1}
-  def get_push_strength({_, :down}), do: {0, -1}
-  def get_push_strength({_, :left}), do: {-1, 0}
-  def get_push_strength({_, :right}), do: {1, 0}
-  def get_push_strength({_, :neutral}), do: {-0.67, -0.67}
+  @spec get_push_strength(piece, move_direction) :: {number, number}
+  def get_push_strength({_, :up}, _), do: {0, 1}
+  def get_push_strength({_, :down}, _), do: {0, -1}
+  def get_push_strength({_, :left}, _), do: {-1, 0}
+  def get_push_strength({_, :right}, _), do: {1, 0}
+  def get_push_strength({_, :neutral}, direction) when direction == :right or direction == :up do
+    {-0.67, -0.67}
+  end
+  def get_push_strength({_, :neutral}, direction) when direction == :left or direction == :down do
+    {0.67, 0.67}
+  end
 
   @doc """
   Takes a list that has the pusher str as head
   And the rest of the pieces str as tail
 
-  [1, 0, -0.67, -1] -> False
-  1 > 1.67 -> False
+  Mountains should always be opposite str of pusher
+
+  Sums all strengths and checks if still above 0
+  (or less than 0 for pusher of -1 str)
   """
   @spec calculate_push([number]) :: boolean
-  def calculate_push([pusher_str | rest_str]) do
-    sum_of_rest = Enum.sum(rest_str)
-    abs(pusher_str) > abs(sum_of_rest)
+  def calculate_push(involved_pieces = [-1 | _rest]) do
+    Enum.sum(involved_pieces) < 0
+  end
+
+  def calculate_push(involved_pieces = [1 | _rest]) do
+    Enum.sum(involved_pieces) > 0
   end
 
   @doc """
@@ -381,16 +391,16 @@ defmodule Game.Board do
   @doc """
   Changes general push str to specific direction only
   """
-  @spec get_applicable_strength([piece]) :: [number]
-  def get_applicable_strength(pieces = [pusher | _rest]) do
+  @spec get_applicable_strength([piece], move_direction) :: [number]
+  def get_applicable_strength(pieces = [pusher | _rest], direction) do
     index =
-      case get_push_strength(pusher) do
+      case get_push_strength(pusher, direction) do
         {0, _} -> 1
         {_, 0} -> 0
       end
 
     pieces
-    |> Stream.map(&get_push_strength/1)
+    |> Stream.map(&(get_push_strength(&1, direction)))
     |> Enum.map(&elem(&1, index))
   end
 
@@ -401,14 +411,6 @@ defmodule Game.Board do
   def orientate_pusher_to_head(column, :up), do: column
   def orientate_pusher_to_head(row, :right), do: row
   def orientate_pusher_to_head(row_or_col, _), do: Enum.reverse(row_or_col)
-
-  @doc """
-  Reverses list if pusher is right or up (natural row/col direction)
-  """
-  @spec orientate_pusher_to_tail([piece], move_direction) :: [piece]
-  def orientate_pusher_to_tail(column, :down), do: column
-  def orientate_pusher_to_tail(row, :left), do: row
-  def orientate_pusher_to_tail(row_or_col, _), do: Enum.reverse(row_or_col)
 
   @doc """
   Drops pieces behind the pusher from the list
@@ -455,16 +457,16 @@ defmodule Game.Board do
   """
   @spec is_pushable?(board, xy_coord) :: boolean
   def is_pushable?(board, pusher_coords) do
-    {_player, pusher_direction} = board[pusher_coords]
-    pusher_index = get_pusher_index(pusher_coords, pusher_direction)
+    {_player, push_direction} = board[pusher_coords]
+    pusher_index = get_pusher_index(pusher_coords, push_direction)
 
     board
-    |> get_row_or_col(pusher_coords, pusher_direction)
+    |> get_row_or_col(pusher_coords, push_direction)
     |> extract_pieces()
-    |> orientate_pusher_to_head(pusher_direction)
+    |> orientate_pusher_to_head(push_direction)
     |> remove_pieces_behind(pusher_index)
     |> get_involved_pieces()
-    |> get_applicable_strength()
+    |> get_applicable_strength(push_direction)
     |> calculate_push()
   end
 
@@ -479,7 +481,7 @@ defmodule Game.Board do
     |> orientate_pusher_to_head(push_direction)
     |> get_involved_pieces()
     |> add_pusher_placeholder_to_list(push_direction)
-    |> get_applicable_strength()
+    |> get_applicable_strength(push_direction)
     |> calculate_push()
   end
 
@@ -494,7 +496,6 @@ defmodule Game.Board do
     |> orientate_pusher_to_head(pusher_direction)
     |> remove_pieces_behind(pusher_index)
     |> get_involved_pieces()
-    # |> orientate_pusher_to_tail(pusher_direction)
     |> update_coords_of_pushed(pusher_direction)
     |> add_empty_behind_pusher(pusher_coords)
     |> Enum.reverse()

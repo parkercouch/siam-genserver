@@ -124,6 +124,15 @@ defmodule Game.ValidationTest do
     assert :valid = Validation.validate_move(turn, move)
   end
 
+  test "Valid to target edge piece after bullpen if pushing same direction" do
+    turn = %{board: board} = %TurnState{}
+    board = %{board | {2, 5} => {:rhino, :down}}
+    turn = %{turn | board: board, selected: :bullpen}
+    move = {:elephant, :target, {2, 5}}
+
+    assert :valid = Validation.validate_move(turn, move)
+  end
+
   test "Not Valid to target corner piece after bullpen if push strength is not enough" do
     turn = %{board: board} = %TurnState{}
     board = %{board | {1, 1} => {:rhino, :left}, {1, 2} => {:rhino, :down}}
