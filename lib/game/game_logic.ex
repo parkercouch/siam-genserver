@@ -5,10 +5,10 @@ defmodule Game.Logic do
 
   Game flow looks like this:
   Turns: Elephants and Rhinos get one complete action per turn
-  Actions:
+  Action:
     Select - select piece or square
     Target - Select target of push/move/rotate
-    Finalize(Rotate) - Select rotation (or confirm push)
+    Finalize - Select rotation or confirm push/withdraw
   """
 
   alias Game.Board, as: Board
@@ -30,11 +30,12 @@ defmodule Game.Logic do
                          {:win, turn, turn}
 
   @doc """
-  Send a move and current turn and get back:
-  {:not_valid, message} - not a valid move (not enough push strength, etc)
-  {:continue, updated_turn} - valid move, still on current turn
-  {:next, current_turn, next_turn} - valid move, this action finishes turn
-  {:win, current_turn, final_turn} - valid move, this action finishes turn and game
+  Send a validated move and current turn and get back:
+
+  {:not_valid, message} - not a valid move (catch all in case validation failed)
+  {:continue, updated_turn} - processed action, still on current turn
+  {:next, updated_turn, next_turn} - processed action, this action finishes turn
+  {:win, updated_turn, final_turn} - processed action, this action finishes turn and game
   """
   @spec process_move(turn, move_data) :: move_response
   def process_move(turn, {_player, :select, location}) do
@@ -64,8 +65,7 @@ defmodule Game.Logic do
   #
   @spec handle_target(turn, TurnState.selectable, TurnState.selectable) :: move_response
   defp handle_target(turn, selected, target) when selected == target do
-    # TODO: make :neutral after fixing types
-    {:continue, %{turn | targeted: target, action: {:rotate, :up}}}
+    {:continue, %{turn | targeted: target, action: {:rotate_in_place, :down}}}
   end
 
   defp handle_target(turn, _selected, target) when target == :bullpen do
@@ -86,7 +86,6 @@ defmodule Game.Logic do
 
   @spec handle_move_to_target(turn, TurnState.selectable) :: turn
   defp handle_move_to_target(turn, target) do
-    # TODO: make :neutral after fixing types
     %{turn | targeted: target, action: {:move_and_rotate, :down}}
   end
 

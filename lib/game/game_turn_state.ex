@@ -66,6 +66,7 @@ defmodule Game.TurnState do
   defp next_player(_current_player = :elephant), do: :rhino
   defp next_player(_current_player = :rhino), do: :elephant
 
+  @spec completed_if_winner(nil | Board.player) :: boolean
   defp completed_if_winner(nil), do: false
   defp completed_if_winner(_), do: true
 end

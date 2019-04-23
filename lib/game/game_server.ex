@@ -120,7 +120,7 @@ defmodule Game.Server do
 
   @spec update_state_and_respond(Logic.move_data, game_state) :: {:reply, Logic.move_response, game_state}
   defp update_state_and_respond(move_data, [current_turn | previous_turns] = state) do
-    case Logic.process_move(move_data, current_turn) do
+    case Logic.process_move(current_turn, move_data) do
       {:continue, updated_turn} = response ->
         {:reply, response, [updated_turn | previous_turns]}
 
