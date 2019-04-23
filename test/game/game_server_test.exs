@@ -1,4 +1,6 @@
 defmodule Game.ServerTest do
+  @moduledoc false
+
   use ExUnit.Case
   doctest Game.Server
 

@@ -36,16 +36,16 @@ defmodule Game.Logic do
   {:next, current_turn, next_turn} - valid move, this action finishes turn
   {:win, current_turn, final_turn} - valid move, this action finishes turn and game
   """
-  @spec process_move(move_data, turn) :: move_response
-  def process_move({_player, :select, location}, turn) do
+  @spec process_move(turn, move_data) :: move_response
+  def process_move(turn, {_player, :select, location}) do
     handle_select(turn, location)
   end
 
-  def process_move({_player, :target, target}, turn) do
+  def process_move(turn, {_player, :target, target}) do
     handle_target(turn, turn.selected, target)
   end
 
-  def process_move({_player, :finalize, direction_or_confirm}, turn) do
+  def process_move(turn, {_player, :finalize, direction_or_confirm}) do
     handle_finalize(turn, direction_or_confirm)
   end
 
@@ -105,19 +105,25 @@ defmodule Game.Logic do
   #
   @spec handle_finalize(turn, Board.move_direction) :: move_response
 
+  # Move to board
+  defp handle_finalize(turn = %TurnState{action: {:move_and_rotate, _}, selected: :bullpen, bullpen: bullpen, current_player: player}, direction) do
+    updated_turn = %{turn | action: {:move_and_rotate, direction}, completed: true}
+    updated_bullpen = %{bullpen | player => bullpen[player] - 1}
+    updated_board = move_piece_to_board(turn, direction)
+
+    next_turn = TurnState.next_turn(updated_turn, updated_board, updated_bullpen)
+
+    {:next, updated_turn, next_turn}
+  end
+
   # Move or Rotate
-  defp handle_finalize(turn = %TurnState{action: {action, _}, selected: selected, bullpen: bullpen, current_player: player}, direction)
+  defp handle_finalize(turn = %TurnState{action: {action, _}}, direction)
     when action == :move_and_rotate or action == :rotate_in_place
   do
     updated_turn = %{turn | action: {action, direction}, completed: true}
     updated_board = move_or_rotate_piece(turn, direction)
 
-    next_turn = if selected == :bullpen do
-      updated_bullpen = %{bullpen | player => bullpen[player] - 1}
-      TurnState.next_turn(updated_turn, updated_board, updated_bullpen)
-    else
-      TurnState.next_turn(updated_turn, updated_board)
-    end
+    next_turn = TurnState.next_turn(updated_turn, updated_board)
 
     {:next, updated_turn, next_turn}
   end
@@ -191,5 +197,11 @@ defmodule Game.Logic do
     updated_piece = {player, facing_direction}
     # Processed in order so this handles both moving to a new square or rotating in place
     %{board | from => {:empty}, to => updated_piece}
+  end
+
+  @spec move_piece_to_board(turn, Board.direction) :: Board.board
+  defp move_piece_to_board(%TurnState{board: board, current_player: player, targeted: to}, facing_direction) do
+    updated_piece = {player, facing_direction}
+    %{board | to => updated_piece}
   end
 end
