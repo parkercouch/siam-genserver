@@ -1,11 +1,11 @@
-defmodule Game.LogicTest do
+defmodule Siam.LogicTest do
   @moduledoc false
 
   use ExUnit.Case
-  doctest Game.Logic
+  doctest Siam.Logic
 
-  alias Game.Logic, as: Logic
-  alias Game.TurnState, as: TurnState
+  alias Siam.Logic, as: Logic
+  alias Siam.TurnState, as: TurnState
 
 
   test "Move elephant to the board" do

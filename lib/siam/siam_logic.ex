@@ -1,4 +1,4 @@
-defmodule Game.Logic do
+defmodule Siam.Logic do
   @moduledoc """
   Game logic for Siam
   Use process_move to interface with this
@@ -11,8 +11,8 @@ defmodule Game.Logic do
     Finalize - Select rotation or confirm push/withdraw
   """
 
-  alias Game.Board, as: Board
-  alias Game.TurnState, as: TurnState
+  alias Siam.Board, as: Board
+  alias Siam.TurnState, as: TurnState
 
   @type select_action :: {Board.player, :select, TurnState.selectable}
   @type target_action :: {Board.player, :target, TurnState.selectable}

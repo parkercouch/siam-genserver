@@ -1,10 +1,10 @@
-defmodule Game.Validation do
+defmodule Siam.Validation do
   @moduledoc """
   Functions for validating incoming moves before processing
   """
 
-  require Game.Board, as: Board
-  alias Game.TurnState, as: TurnState
+  require Siam.Board, as: Board
+  alias Siam.TurnState, as: TurnState
 
   @type select_action :: {Board.player, :select, TurnState.selectable}
   @type target_action :: {Board.player, :target, TurnState.selectable}

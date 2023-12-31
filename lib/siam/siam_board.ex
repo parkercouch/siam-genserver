@@ -1,4 +1,4 @@
-defmodule Game.Board do
+defmodule Siam.Board do
   @moduledoc """
   Game board creation and manipulation
   A board is just a normal map:

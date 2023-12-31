@@ -1,8 +1,8 @@
-defmodule Game.TurnState do
+defmodule Siam.TurnState do
   @moduledoc """
   Defines game state and helper functions
   """
-  alias Game.Board, as: Board
+  alias Siam.Board, as: Board
 
   @type bullpen :: %{elephant: 0..5, rhino: 0..5}
   @type selectable :: Board.xy_coord | :bullpen

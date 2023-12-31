@@ -1,10 +1,10 @@
-defmodule Game.TurnStateTest do
+defmodule Siam.TurnStateTest do
   @moduledoc false
 
   use ExUnit.Case
-  doctest Game.TurnState
+  doctest Siam.TurnState
 
-  alias Game.TurnState, as: TurnState
+  alias Siam.TurnState, as: TurnState
 
   test "Can construct a new TurnState" do
     turn = %TurnState{}

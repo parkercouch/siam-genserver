@@ -1,12 +1,12 @@
-defmodule Game.Server do
+defmodule Siam.Server do
   @moduledoc """
   GameServer for Siam.
   """
   use GenServer
 
-  alias Game.Logic, as: Logic
-  alias Game.Validation, as: Validation
-  alias Game.TurnState, as: TurnState
+  alias Siam.Logic, as: Logic
+  alias Siam.Validation, as: Validation
+  alias Siam.TurnState, as: TurnState
 
   @type turn :: TurnState.t()
   @type game_state :: [turn]
@@ -20,7 +20,7 @@ defmodule Game.Server do
   """
   @spec start :: {:ok, pid}
   def start do
-    GenServer.start(Game.Server, nil)
+    GenServer.start(Siam.Server, nil)
   end
 
   @doc """

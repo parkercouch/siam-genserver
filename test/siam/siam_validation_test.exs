@@ -1,11 +1,11 @@
-defmodule Game.ValidationTest do
+defmodule Siam.ValidationTest do
   @moduledoc false
 
   use ExUnit.Case
-  doctest Game.Validation
+  doctest Siam.Validation
 
-  alias Game.Validation, as: Validation
-  alias Game.TurnState, as: TurnState
+  alias Siam.Validation, as: Validation
+  alias Siam.TurnState, as: TurnState
 
   #
   # SELECTING

@@ -1,11 +1,11 @@
-defmodule Game.BoardTest do
+defmodule Siam.BoardTest do
   @moduledoc """
   Unit tests for the Board Module
   """
   use ExUnit.Case
-  doctest Game.Board
+  doctest Siam.Board
 
-  alias Game.Board, as: Board
+  alias Siam.Board, as: Board
 
   test "On edge of board" do
     assert Board.on_edge?({1, 1}) == true
